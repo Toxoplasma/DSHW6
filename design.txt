@@ -15,12 +15,10 @@ Main Manager
 Top of the system. Users login to this manager and can talk directly with this 
 manager for overall stats of past tournaments.
 
-    * Handles players logging in (always responds with success of login and add
-      to list of current)
-      	1. New player ->
-            	Create new username/password pair with empty stats.
-      	2. Not New Player ->
-      			Notify all active Tournament Managers of the login.
+    * Handles players logging in. When it receives a new player registration, it adds the player to its list of players and sends an acknowledgment to the player.
+      	1. New player -> Simply add the player to the list of players, and store their password/key.
+      	2. Not a Player ->
+      			Notify all active Tournament Managers of the login and add them to the list of players.
     * Keeps track of who is currently logged (by monitoring each player and 
       adding/removing them to/from a list of current players).
     * Keeps track of past tournament stats (win/loss of tournaments) for each player.
@@ -28,6 +26,7 @@ manager for overall stats of past tournaments.
       slots and k (k > 0 and odd) games per match.
       Starts the tournament with as many as possible of the currently logged in 
       players (first come, first served), and fills empty slots with "byes."
+    * Receives and handles requests from the environment for players' stats.
     * Receives stats from Tournament Manager(s) to add to players' stats
 
 Tournament Manager
@@ -134,11 +133,8 @@ manager, and waits to receive messages and handles them normally.
 Messages in the system
 ======================
 
-
 Start a Tournament:
   Message from the environment to a main manager telling it to start up a tournament. When a main manager receives this, it will compute the players that should be in the tournament and start up a TM, passing it the list of players, the size of the tournament, and the number of games in each match.
-
-
 
 Stat request:
   Message from the environment to a main manager asking for stats about a specific player. The main manager can then respond with the stats, since it keeps track of stats for each player.
@@ -161,28 +157,20 @@ Rejoin notification:
 Match Result:
   Sent by TMs and received by the main manager. This message alerts the main manager that a match has finished, and that it should update its stats for the winner and loser.
 
-###TM###
-Manages 1 tourny
-Inits:
-  TMs are started by the main manager to manage a specific tournament. As a TM is created, it is sent the list of players in that tournament, the tournament size, and the number of games per match.
+TM Initializer:
+  TMs are started by the main manager to manage a specific tournament. As a TM is created, it is sent the list of players in that tournament, the tournament size, and the number of games per match. It is also sent the Ref of the tournament request, and the PID to report back to when the tournament is finished. Finally, it receives the PID of its TM, so that it can report match results. 
 
-Tourny Ended:
-  Sent by a TM to the environment to notify it that a tournament has finished.
+Tournament Ended:
+  Sent by a TM to the environment to notify it that a tournament has finished. Contains the ref of the tournament as well as the winner.
 
 Match Result:
   Sent by MMs to TMs. Reports the result of the match managed by the sender to its TM.
 
-
-
-###MM###
-Inits:
+MM Initialization:
   MMs are started by TMs to handle a specific match. When a MM is created, it is sent the players in the match, and the number of games in the match.
 
-
-###GM###
-Inits:
-  GMs are started by MMs to handle a specific game. When a GM is created, it is simply sent the players in the match, and will organize a single game between those players.
-
+GM Initialization:
+  GMs are started by MMs to handle a specific game. When a GM is created, it is  sent the players in the match, and will organize a single game between those players. It is also sent the completed games in the match, so that the players can be sent this (in case their mastermind strategy depends on it somehow).
 
 Turn Starting:
   Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn.
