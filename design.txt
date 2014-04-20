@@ -139,8 +139,6 @@ Messages in the system
 Start a Tournament:
   Message from the environment to a main manager telling it to start up a tournament. When a main manager receives this, it will compute the players that should be in the tournament and start up a TM, passing it the list of players, the size of the tournament, and the number of games in each match.
 
-
-
 Stat request:
   Message from the environment to a main manager asking for stats about a specific player. The main manager can then respond with the stats, since it keeps track of stats for each player.
 
