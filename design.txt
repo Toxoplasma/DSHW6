@@ -1,42 +1,137 @@
-manager processes:
-	login/logout manager, also deals with OW
-	Tournament manager
-	Match manager
-	Game manager
-	Player
+
+Team Members: Alejandro Frias and Ravi Kumar
+
+
+Table of Contents:
+	* Main Manager
+	* Tournament Manager
+	* Match Manager
+	* Game Manager
+	* Player Process
+	* Messages in the System
+
+Main Manager
+============
+Top of the system. Users login to this manager and can talk directly with this 
+manager for overall stats of past tournaments.
+
+    * Handles players logging in (always responds with success of login and add
+      to list of current)
+      	1. New player ->
+            	Create new username/password pair with empty stats.
+      	2. Not New Player ->
+      			Notify all active Tournament Managers of the login.
+    * Keeps track of who is currently logged (by monitoring each player and 
+      adding/removing them to/from a list of current players).
+    * Keeps track of past tournament stats (win/loss of tournaments) for each player.
+    * Receives external command to start a yahtzee tournament with 2^m (m > 0) 
+      slots and k (k > 0 and odd) games per match.
+      Starts the tournament with as many as possible of the currently logged in 
+      players (first come, first served), and fills empty slots with "byes."
+    * Receives stats from Tournament Manager(s) to add to players' stats
+
+Tournament Manager
+==================
+
+Manages an individual tournament. Main Manager starts this process up with a 
+list of players, a tournament size (power of two, so 'm' is sent assuming size 2^m),
+and a number of games per match (k > 0 and odd).
+
+    * Runs the tournament:
+      - Determine the brackets.
+      - Starts up matches between players with a Match Manager.
+      - Receives results from matches, used to determine next round and eventually a winner.
+    * Keep track of tournament stats for each player
+    * Keeps track of which players are in the tournament still (ones that haven't lost)
+    * Keeps track (through monitoring) of which players are still logged in
+    * Can receive login messages from Main Manager:
+      - If the player is still in the tournament, then it finds out which match 
+        the player was in and sends that Match Manager a login message
+      - If the player is not in the tournament, then don't do anything
+    * When player is eliminated from the tournament (loses) or wins the entire 
+      tournament, send the stats for that player to the Main Manager to keep 
+      track of.
+    * Shuts down after tournament is finished
+
+
+Match Manager
+=============
+
+Manages a match of 'k' games (k > 0 and is odd) between two players. Each game
+is dealt with by a Game Manager. Returns results of match to Tournament Manager.
+
+
+    * Keeps track of all stats of each completed game (received from Game
+      Managers) for the two players.
+    * Monitors both players. Can receive join message from Tournament Manager to 
+      have the player rejoin in time for next game
+    * Handles crashed players by making them forfeit the match if they're not 
+      back within a reasonable amount of time
+    * Handles ties and "byes" as per the specs
+    * After sending stats/results to Tournament Manger at the end of the match, shutdown
 
 
 Game manager
 ============
-Responsibilities:
-	Manages a single game between two players.
-	Communicates with the players during each turn to give them dice rolls.
-	Keeps track of the score and verifies that neither player is cheating.
-	Watches for either player crashing and handles that.
-	Reports the outcome of a game to the match manager.
+
+Plays out one game with two players (until score card is filled out for both). 
+Sends result of game to Match Manager. Is initialized with results of previous games 
+in the match so that it can tell the players of their current standing in the match.
+
+	* Communicates with the players during each turn to give them dice rolls
+	* Keeps track of the score and verifies that neither player is cheating.
+	* Watches for either player crashing and handles that.
+	* Reports the outcome of the game to the match manager.
 
 States: Assembly phase, Scoring phase
 
+* Note: Cheating is checked at every stage/message very simply. No direct 
+        communication between players is allowed.
+
 Assembly phase:
-	When the GM enters the assembly phase, it generates the 15 dice rolls for the turn, and sends the first five to the players in a {turn starting} message. The players will reply with their choices for which dice they are keeping and which they are rerolling.
-	When the GM receives this message, it will reply with a {first modification attempt} message containing the player's new set of 5 dice values. The player will again reply with their choice.
-	When the GM receives this second set of choices, it replies with a {second modification attempt} message containing the player's final set of five dice values, and enters the scoring phase.
+	1. When the GM enters the assembly phase, it generates the 15 dice rolls for 
+	   the turn, and sends the first five to each player. 
+	2. The players reply with their choice of keepers.
+	3. When the GM receives this message, it will send them the set of five dice
+	   rolls it has now (the keepers from the previous roll plus the re-rolls take
+	   from the list). This message is tagged as the first re-roll. The player 
+	   will again reply with their choice of keepers.
+	4. When the GM receives this second set of keepers, it replies with the final
+	   set of five dice values, and enters the scoring phase. This message is 
+	   tagged as final dice.
 	
 scoring phase:
-	In the scoring phase, the players will send the GM their choice for which box to put their score for this turn in, and the GM will record this. Here, it will check that neither player is trying to cheat in any way. After this, it will check to see if the game is over or if there are more rounds.
-	If it is over, it reports the results of the game to its match manager. Otherwise, it returns to the assembly phase and thus starts another turn.
+	1. In the scoring phase, the players will send the GM their choice for which
+	   box to put their score for this turn in, and the GM will record this. 
+	   After this, it will check to see if the game is over or if there are more 
+	   turns (boxes to fill out for either player).
+	2. If it is over, it reports the results of the game to its Match Manager.
+	   Otherwise, it returns to the assembly phase and thus starts another turn.
 
 
-Player
-======
-Responsibilities:
-	Registers with one or more main managers
-	Plays matches/games against other players, as managed by MMs and GMs
+Player Process
+==============
 
-A player process only has one state, from which it reacts to all messages. It also stores no data at all; instead, all messages sent to players will contain all relevant information for that message. For example, a game message will contain all info so far about that game including current dice, scorecard, etc., as well as about the match (such as the score so far), which matches were lost due to crashing, etc. This way, players can handle crashes quite elegantly, as it simply rejoins and registers with the main manager, and waits to receive messages and handles them normally. 
+Players can register/login. They also respond to messages from Game Managers with
+their choices. THe player expects all information about the game/match from these
+messages, and simply replies what it would do in such a game state.
+
+	* Registers with Main Managers, by sending username/password login attempts
+	* Waits for success message from Main Manager so they know they're logged in.
+	* Plays matches/games against other players, as managed by MMs and GMs. 
+	  Only GM will interact directly with the player
+
+A Player process only has one state, from which it reacts to all game messages. 
+It also stores no data at all; instead, all messages sent to players will contain 
+all relevant information for that message. For example, a game message will 
+contain all info so far about that game including current dice, scorecard, etc., 
+as well as about the match (such as the win/losses so far and number of games in 
+the match), which matches were lost due to crashing, etc. This way, players can 
+handle crashes quite elegantly, as it simply rejoins and registers with the main 
+manager, and waits to receive messages and handles them normally. 
 
 
-Messages in the system
+Messages in the System
 ======================
 
 Turn Starting:
