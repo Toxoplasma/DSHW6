@@ -1,55 +1,81 @@
 ================================================================================
-====							TOURNAMENT YAHTZEE 							====
+								TOURNAMENT YAHTZEE 							
 ================================================================================
-Team Members: Alejandro Frias and Ravi Kumar
 
+Team Members: Alejandro Frias (afrias@g.hmc.edu) and Ravi Kumar (rkumar@g.hmc.edu)
 
 Table of Contents:
 	* Main Manager
-	* Tournament Manager
-	* Match Manager
-	* Game Manager
+	* Tournament Manager (TM)
+	* Match Manager (MM)
+	* Game Manager (GM)
 	* Player Process
+	* Suggested Protocol
 	* Messages in the System
 
 Main Manager
 ============
-Top of the system. Users login to this manager and can talk directly with this 
-manager for overall stats of past tournaments.
 
-    * Handles players logging in. When it receives a new player registration, it adds the player to its list of players and sends an acknowledgment to the player.
-      	1. New player -> Simply add the player to the list of players, and store their password/key.
-      	2. Not a Player ->
-      			Notify all active Tournament Managers of the login and add them to the list of players.
-    * Keeps track of who is currently logged (by monitoring each player and 
-      adding/removing them to/from a list of current players).
-    * Keeps track of past tournament stats (win/loss of tournaments) for each player.
+Description:
+	Top of the system. Users login to this manager and can talk directly with this 
+	manager for overall stats of past tournaments.
+
+Data:
+	logged_in_players - A list of all the players currently logged in
+	registered_players - A list of all the registered players
+	tournament_stats - All the stats from finished tournaments for each player
+
+
+    * Handles players logging in. A successful login always adds the player to
+      logged_in_players and sends an acknowledgment to the player.
+      Additional work is done for the two types of players trying to log in:
+      	1. New Player ->
+      			Add the player to registered_players, storing their 
+      			password/key and initializing an empty spot in tournament_stats 
+      			for them.
+      	2. Already Registered Player (in registered_players) ->
+      			Notify all active Tournament Managers of the login
+    * Keeps track of who is currently logged by monitoring each player and 
+      adding/removing them to/from logged_in_players. Players are always added 
+      to the end of logged_in_players
+    * Keeps track of past tournament stats (win/loss of tournaments) for each 
+      player in tournament_stats.
     * Receives external command to start a yahtzee tournament with 2^m (m > 0) 
       slots and k (k > 0 and odd) games per match.
       Starts the tournament with as many as possible of the currently logged in 
-      players (first come, first served), and fills empty slots with "byes."
+      players and fills empty slots with "byes." First come, first served 
+      implemented by taking the first 2^m out of logged_in_players and then 
+      moving them to the end of the list.
     * Receives and handles requests from the environment for players' stats.
-    * Receives stats from Tournament Manager(s) to add to players' stats
+    * Receives stats from Tournament Manager(s) to add to tournament_stats
 
 Tournament Manager
 ==================
+Description:
+	Manages an individual tournament. Main Manager starts this process up with a 
+	list of players, a tournament size (power of two, so 'm' is sent assuming size 2^m),
+	and a number of games per match (k > 0 and odd).
 
-Manages an individual tournament. Main Manager starts this process up with a 
-list of players, a tournament size (power of two, so 'm' is sent assuming size 2^m),
-and a number of games per match (k > 0 and odd).
+Data:
+	player_list - A list of all players still in the tournament
+	logged_in_players - A list of all the players still logged (a subset of player_list)
+	m - There are 2^m initial slots
+	k - Each match is best out of k games
+	tournament_stats - How each player is doing in the tournament
+
 
     * Runs the tournament:
       - Determine the brackets.
       - Starts up matches between players with a Match Manager.
       - Receives results from matches, used to determine next round and eventually a winner.
-    * Keep track of tournament stats for each player
+    * Keep track of tournament stats for each player for the current tournament
     * Keeps track of which players are in the tournament still (ones that haven't lost)
     * Keeps track (through monitoring) of which players are still logged in
     * Can receive login messages from Main Manager:
       - If the player is still in the tournament, then it finds out which match 
         the player was in and sends that Match Manager a login message
       - If the player is not in the tournament, then don't do anything
-    * When player is eliminated from the tournament (loses) or wins the entire 
+    * When a player is eliminated from the tournament (loses) or wins the entire 
       tournament, send the stats for that player to the Main Manager to keep 
       track of.
     * Shuts down after tournament is finished
@@ -57,9 +83,15 @@ and a number of games per match (k > 0 and odd).
 
 Match Manager
 =============
+Description:
+	Manages a match of 'k' games (k > 0 and is odd) between two players. Each game
+	is dealt with by a Game Manager. Returns results of match to Tournament Manager.
 
-Manages a match of 'k' games (k > 0 and is odd) between two players. Each game
-is dealt with by a Game Manager. Returns results of match to Tournament Manager.
+Data:
+	k - The number of games the match will be decided out of (first to ceiling of k/2)
+	match_stats - The stats of each player in the match (win/loss at a minimum), 
+	              the current score and which game the players are on
+	players - The two players in this match
 
 
     * Keeps track of all stats of each completed game (received from Game
@@ -75,9 +107,19 @@ is dealt with by a Game Manager. Returns results of match to Tournament Manager.
 Game manager
 ============
 
-Plays out one game with two players (until score card is filled out for both). 
-Sends result of game to Match Manager. Is initialized with results of previous games 
-in the match so that it can tell the players of their current standing in the match.
+Description:
+	Plays out one game with two players (until score card is filled out for both). 
+	Sends result of game to Match Manager. Is initialized with results of previous games 
+	in the match so that it can tell the players of their current standing in the match.
+Data:
+	players - The two players in the game
+	scorecard - The scores of each player so far, showing which score boxes have been filled in.
+	game_stats - Any interesting stats that might want to be kept track of by the 
+				 Main Manager (might be nothing more than if the player won or lost)
+	full_dice_roll - The 15 randomly generated dice rolls used for the game
+	player_one_last_five - The last five dice rolls given to player one (used for cheat detection)
+	player_two_last_five - The last five dice rolls given to player two (used for cheat detection)
+
 
 	* Communicates with the players during each turn to give them dice rolls
 	* Keeps track of the score and verifies that neither player is cheating.
@@ -87,7 +129,8 @@ in the match so that it can tell the players of their current standing in the ma
 States: Assembly phase, Scoring phase
 
 * Note: Cheating is checked at every stage/message very simply. No direct 
-        communication between players is allowed.
+        communication between players is allowed. So this just means checking 
+        that the reported keepers are a subset of the last 5 given dice rolls.
 
 Assembly phase:
 	1. When the GM enters the assembly phase, it generates the 15 dice rolls for 
@@ -113,9 +156,13 @@ scoring phase:
 Player Process
 ==============
 
-Players can register/login. They also respond to messages from Game Managers with
-their choices. THe player expects all information about the game/match from these
-messages, and simply replies what it would do in such a game state.
+Description:
+	Players can register/login. They also respond to messages from Game Managers with
+	their choices. THe player expects all information about the game/match from these
+	messages, and simply replies what it would do in such a game state.
+Data:
+	Main Manager - A way to comminicate with the main manager for login/registration purposes
+
 
 	* Registers with Main Managers, by sending username/password login attempts
 	* Waits for success message from Main Manager so they know they're logged in.
@@ -132,62 +179,185 @@ handle crashes quite elegantly, as it simply rejoins and registers with the main
 manager, and waits to receive messages and handles them normally. 
 
 
-Messages in the system
-======================
+Suggested Protocol
+==================
+Start Tournament:
+	{Pid, Ref, start_tournament, M, K}
+	Pid - The Pid of the process requesting a tournament be started (to send the 
+	      results to once it's over)
+	Ref - A unique reference for that tournament (also for returning of results)
+	M - There will be 2^M slots in the tournament (designates the size). M > 0
+	K - Game per Match. K > 0 and odd
 
-Start a Tournament:
-  Message from the environment to a main manager telling it to start up a tournament. When a main manager receives this, it will compute the players that should be in the tournament and start up a TM, passing it the list of players, the size of the tournament, and the number of games in each match.
+  	When a Main Manager receives this, it will compute the list of players that 
+  	should be in the tournament. The assignment says random selection, but we 
+  	prefer first come, first served by taking the first 2^M logged_in_players. It 
+  	then starts up a TM, passing it the list of players, the size of the tournament, 
+  	and the number of games in each match. When the tournament finishes, it notifies 
+  	the Pid of the winnner
 
-Stat request:
-  Message from the environment to a main manager asking for stats about a specific player. The main manager can then respond with the stats, since it keeps track of stats for each player.
+Stats Request:
+	{Pid, Ref, stats_request, Player}
+	Player - The username of the player whose stats you want
 
-Stats response:
-  sent by a main manager to the requester. This messages contains all stats that we keep track of for the requested player.
+  	Message from the environment (possibly from a player) to a Main Manager asking 
+  	for stats about a specific player. The main manager can then respond with 
+  	the stats, since it keeps track of stats for each player. If stats of ongoing 
+  	tournaments are required, more messages for gather a snap shot can be added to 
+  	the algorithm for that. Currently this just handles stats of finished tournaments.
 
-Player registration:
-  Sent by a player to the main manager when it joins. If the main manager hasn't seen that player before, it simply adds it to the list of players. If it has, it will send all the TMs a notification that that player has rejoined, in case he is in any ongoing tournaments. It will then reply to the player with an acknowledgement that he is logged in.
+Stats Response:
+	{Ref, stats_response, Data}
+	Data - All the stats for the player
 
-Registration acknowledgement:
-  Sent by the main manager to a player to let the player know that they are logged in.
+  	Sent by a Main Manager to the requester of stats. This messages contains all stats 
+  	that we keep track of for the requested player (win/losses at a minimum, 
+  	a play-by-play of every tournament at a maximum)
 
-Rejoin notification:
-  Sent by the main manager to all TMs when a player rejoins. When a TM receives this, it checks to see if that player is still in its tournament. If it is, it will notify the relevant MM of the player's new PID so the MM can continue running the match.
+Player Registration/Login:
+	{Pid, Ref, player_registration, Username, Password}
+	Pid - Process ID of the player. Will be used for all communication with that 
+	      player (no global registration needed)
+	Ref - Unique reference used to tag a particular login. Whenever a player 
+	      logs out and back in, they should give a new Ref and only accept message 
+	      with that Ref.
+	Username - The username with which the player wishes to register/login as
+	Password - The password for registration/login
 
-Rejoin notification:
-  Sent by the TM to an MM when a player in that MM has logged back in. The MM will then continue running the match.
+  	Sent by a player to the main manager when it joins. If the main manager hasn't 
+  	seen that player before, it simply adds it to registered_players. If the 
+  	player is already in registered_players, it will send all the TMs a Rejoin 
+  	Notification that that player has rejoined, in case they're in any ongoing 
+  	tournaments. It will then reply to the player with an acknowledgment that 
+  	they're is logged in.
 
-Match Result:
-  Sent by TMs and received by the main manager. This message alerts the main manager that a match has finished, and that it should update its stats for the winner and loser.
-
-TM Initializer:
-  TMs are started by the main manager to manage a specific tournament. As a TM is created, it is sent the list of players in that tournament, the tournament size, and the number of games per match. It is also sent the Ref of the tournament request, and the PID to report back to when the tournament is finished. Finally, it receives the PID of its TM, so that it can report match results. 
-
-Tournament Ended:
-  Sent by a TM to the environment to notify it that a tournament has finished. Contains the ref of the tournament as well as the winner.
-
-Match Result:
-  Sent by MMs to TMs. Reports the result of the match managed by the sender to its TM.
-
-MM Initialization:
-  MMs are started by TMs to handle a specific match. When a MM is created, it is sent the players in the match, and the number of games in the match.
-
-GM Initialization:
-  GMs are started by MMs to handle a specific game. When a GM is created, it is  sent the players in the match, and will organize a single game between those players. It is also sent the completed games in the match, so that the players can be sent this (in case their mastermind strategy depends on it somehow).
+Registration Acknowledgment:
+	{Ref, login_success}
+  	Sent by the Main Manager to a Player to let the player know that they are 
+  	logged in.
 
 Turn Starting:
-  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn.
+	{Pid, Ref, start_turn, DiceRoll, GameState, MatchState}
+	Pid - Process ID of Game Manager that the Player responds to with its choice of keepers
+	Ref - A unique reference to mark the the message with (used to distinguish 
+		  who is responding and prevent cheating of the sort of pretending to be 
+		  another player)
+	DiceRoll - The first 5 dice for the turn.
+	GameState - The current scorecards of both players
+	MatchState - How many games each player has won so far and how many games in 
+	 			 the match to play (and possibly a play-by-play or scorecard of 
+	 			 previous games if deemed necessary to implement)
 
-Turn Starting Reply:
-  Sent by players to GMs. Contains the player's decision about which dice to keep and which to reroll for its first modification attempt.
+  	Sent by GMs, received by players. Contains everything about the state of the game and match overall so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn. Waits for a reply from the player of their first selection of keepers.
 
 First Modification Attempt:
-  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well the player's new set of five dice rolls that it has after any rerolls.
+	{Ref, first_modification_attempt, Keepers}
+	Ref - the unique reference given in the start_turn message
+	Keepers - A subset of the DiceRoll given in the start_turn message
 
-First Modification Attempt Reply:
-  Sent by players to GMs. Contains the player's decision about which dice to keep and which to reroll for its second modification attempt.
+	Sent by players to GMs. Contains the player's decision about which dice to 
+	keep and which to re-roll for its first modification attempt. A second_roll 
+	message is then sent to the player, awaiting  second_modification_attempt 
+	message. If Keepers is equivalent to DiceRoll given, then skip to final_roll 
+	message and await score_selection message.
+
+First Modification Reply:
+	{Pid, Ref, second_roll, DiceRoll, GameState, MatchState}
+	Pid - Process ID of Game Manager that the Player responds to with its second choice of keepers
+	Ref - A unique reference to mark the the message with (used to distinguish 
+		  who is responding and prevent cheating of the sort of pretending to be 
+		  another player)
+	DiceRoll - The set of 5 dice made up of the Keepers from first_modification_attempt 
+			   and filled in with the next dice rolls of the full_dice_roll made at 
+			   the beginning of the game by the GM.
+	GameState - The current scorecards of both players
+	MatchState - How many games each player has won so far and how many games in 
+	 			 the match to play (and possibly a play-by-play or scorecard of 
+	 			 previous games if deemed necessary to implement)
+
+  	Sent by GMs, received by players. Contains everything about the tournament 
+  	state so far that the player could possibly care about, as well the player's 
+  	new set of five dice rolls that it gets after their first_modification_attempt 
+  	(a combination of the Keepers sent filled in with the predetermined dice rolls 
+  	for the game.
 
 Second Modification Attempt:
-  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well the player's final set of five dice rolls that it has after any more rerolls.
+	{Ref, second_modification_attempt, Keepers}
+	Ref - the unique reference given in the second_roll message
+	Keepers - A subset of the DiceRoll given in the start_turn message
+
+  	Sent by players to GMs. Contains the player's decision about which dice to 
+  	keep and which to re-roll for its second_modification_attempt.
+
+Second Modification Attempt Reply:
+	{Pid, Ref, final_roll, DiceRoll, GameState, MatchState}
+	Pid - Process ID of Game Manager that the Player responds to with its second choice of keepers
+	Ref - A unique reference to mark the the message with (used to distinguish 
+		  who is responding and prevent cheating of the sort of pretending to be 
+		  another player)
+	DiceRoll - The set of 5 dice made up of the Keepers from second_modification_attempt 
+			   and filled in with the next dice rolls of the full_dice_roll made at 
+			   the beginning of the game by the GM.
+	GameState - The current scorecards of both players
+	MatchState - How many games each player has won so far and how many games in 
+	 			 the match to play (and possibly a play-by-play or scorecard of 
+	 			 previous games if deemed necessary to implement)
+
+  	Sent by GMs, received by players. Contains everything about the tournament 
+  	state so far that the player could possibly care about, as well the player's 
+  	final set of five dice rolls. The player must now respond with a score_selection 
+  	message for the next turn to start (or the game to end if it was the final turn).
 
 Score Selection:
-  Sent by players to GMs. This message contains the information for how a player is assigning their score for the turn.
+	{Ref, score_selection, ScoreBox}
+	Ref - the unique reference given in the final_roll message
+	ScoreBox - The unmarked box that the player wishes to use it's dice roll on
+
+  	Sent by players to GMs. This message is used to indicate which box on the 
+  	score card to use the turns final dice roll on.
+
+
+Messages in the System
+======================
+
+Rejoin Notification (from Main Manager):
+  	Sent by the Main Manager to all TMs when a player rejoins. When a TM receives 
+  	this, it checks to see if that player is still in its tournament. If it is, it 
+  	will notify the relevant MM of the player's new PID so the MM can continue 
+  	running the match.
+
+Rejoin Notification (from TM):
+  	Sent by the TM to an MM when a player in that MM has logged back in. The MM 
+  	will then continue running the match if it was waiting for that player to rejoin.
+
+Tournament Player Result:
+	Sent by TMs to Main Managers when a player loses or wins the entire tournament.
+	It contains all the stats of the tournament for that player. The Main Manager 
+	can then add these stats to that player's overall tournament stats.
+
+Match Result:
+  	Sent by MMs and received by the TMs. This message alerts the TM that a match 
+  	has finished with results so that the TM can update its tournament_stats and 
+  	player_list and determine the next match ups.
+
+TM Initializer:
+  	TMs are started by the Main Manager to manage a specific tournament. As a 
+  	TM is created, it is sent the list of players in that tournament, the 
+  	tournament size, and the number of games per match. It is also sent the Ref 
+  	of the tournament request, and the PID to report back to when the tournament 
+  	is finished. Finally, it receives the PID of its TM, so that it can report 
+  	match results. 
+
+Tournament Ended:
+  	Sent by a TM to the environment to notify it that a tournament has finished. C
+  	ontains the Ref of the tournament as well as the winner.
+
+MM Initialization:
+  	MMs are started by TMs to handle a specific match. When a MM is created, it 
+  	is sent the players in the match, and the number of games in the match.
+
+GM Initialization:
+ 	GMs are started by MMs to handle a specific game. When a GM is created, it is 
+ 	sent the players in the match, and will organize a single game between those 
+ 	players. It is also sent the completed games in the match, so that the players 
+ 	can be sent this (in case their mastermind strategy depends on it somehow).
