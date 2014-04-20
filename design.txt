@@ -131,14 +131,73 @@ handle crashes quite elegantly, as it simply rejoins and registers with the main
 manager, and waits to receive messages and handles them normally. 
 
 
-Messages in the System
+Messages in the system
 ======================
 
+
+Start a Tournament:
+  Message from the environment to a main manager telling it to start up a tournament. When a main manager receives this, it will compute the players that should be in the tournament and start up a TM, passing it the list of players, the size of the tournament, and the number of games in each match.
+
+
+
+Stat request:
+  Message from the environment to a main manager asking for stats about a specific player. The main manager can then respond with the stats, since it keeps track of stats for each player.
+
+Stats response:
+  sent by a main manager to the requester. This messages contains all stats that we keep track of for the requested player.
+
+Player registration:
+  Sent by a player to the main manager when it joins. If the main manager hasn't seen that player before, it simply adds it to the list of players. If it has, it will send all the TMs a notification that that player has rejoined, in case he is in any ongoing tournaments. It will then reply to the player with an acknowledgement that he is logged in.
+
+Registration acknowledgement:
+  Sent by the main manager to a player to let the player know that they are logged in.
+
+Rejoin notification:
+  Sent by the main manager to all TMs when a player rejoins. When a TM receives this, it checks to see if that player is still in its tournament. If it is, it will notify the relevant MM of the player's new PID so the MM can continue running the match.
+
+Rejoin notification:
+  Sent by the TM to an MM when a player in that MM has logged back in. The MM will then continue running the match.
+
+Match Result:
+  Sent by TMs and received by the main manager. This message alerts the main manager that a match has finished, and that it should update its stats for the winner and loser.
+
+###TM###
+Manages 1 tourny
+Inits:
+  TMs are started by the main manager to manage a specific tournament. As a TM is created, it is sent the list of players in that tournament, the tournament size, and the number of games per match.
+
+Tourny Ended:
+  Sent by a TM to the environment to notify it that a tournament has finished.
+
+Match Result:
+  Sent by MMs to TMs. Reports the result of the match managed by the sender to its TM.
+
+
+
+###MM###
+Inits:
+  MMs are started by TMs to handle a specific match. When a MM is created, it is sent the players in the match, and the number of games in the match.
+
+
+###GM###
+Inits:
+  GMs are started by MMs to handle a specific game. When a GM is created, it is simply sent the players in the match, and will organize a single game between those players.
+
+
 Turn Starting:
-	Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn.
+  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn.
 
 Turn Starting Reply:
-	Sent by players to GMs. Contains the player's decision  
+  Sent by players to GMs. Contains the player's decision about which dice to keep and which to reroll for its first modification attempt.
 
+First Modification Attempt:
+  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well the player's new set of five dice rolls that it has after any rerolls.
 
+First Modification Attempt Reply:
+  Sent by players to GMs. Contains the player's decision about which dice to keep and which to reroll for its second modification attempt.
 
+Second Modification Attempt:
+  Sent by GMs, received by players. Contains everything about the tournament state so far that the player could possibly care about, as well the player's final set of five dice rolls that it has after any more rerolls.
+
+Score Selection:
+  Sent by players to GMs. This message contains the information for how a player is assigning their score for the turn.
