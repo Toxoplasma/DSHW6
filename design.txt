@@ -183,6 +183,7 @@ manager, and waits to receive messages and handles them normally.
 
 Suggested Protocol
 ==================
+
 Start Tournament:
 	{Pid, Ref, start_tournament, M, K}
 	Pid - The Pid of the process requesting a tournament be started (to send the 
@@ -245,12 +246,18 @@ Turn Starting:
 		  who is responding and prevent cheating of the sort of pretending to be 
 		  another player)
 	DiceRoll - The first 5 dice for the turn.
-	GameState - The current scorecards of both players
+	GameState - The current scorecards of both players, and history of game. 
+				Score cards are dictionaries with keys like 'aces' with the score 
+				assigned or 'no_value' if no score yet assigned. The history is
+				an array of each turn and what each player choice for each re-roll.
 	MatchState - How many games each player has won so far and how many games in 
 	 			 the match to play (and possibly a play-by-play or scorecard of 
 	 			 previous games if deemed necessary to implement)
 
-  	Sent by GMs, received by players. Contains everything about the state of the game and match overall so far that the player could possibly care about, as well as the initial set of 5 dice values the player rolls for the turn. Waits for a reply from the player of their first selection of keepers.
+  	Sent by GMs, received by players. Contains everything about the state of the 
+  	game and match overall so far that the player could possibly care about, as well 
+  	as the initial set of 5 dice values the player rolls for the turn. Waits for a 
+  	reply from the player of their first selection of keepers.
 
 First Modification Attempt:
 	{Ref, first_modification_attempt, Keepers}
@@ -272,7 +279,10 @@ First Modification Reply:
 	DiceRoll - The set of 5 dice made up of the Keepers from first_modification_attempt 
 			   and filled in with the next dice rolls of the full_dice_roll made at 
 			   the beginning of the game by the GM.
-	GameState - The current scorecards of both players
+	GameState - The current scorecards of both players, and history of game. 
+				Score cards are dictionaries with keys like 'aces' with the score 
+				assigned or 'no_value' if no score yet assigned. The history is
+				an array of each turn and what each player choice for each re-roll.
 	MatchState - How many games each player has won so far and how many games in 
 	 			 the match to play (and possibly a play-by-play or scorecard of 
 	 			 previous games if deemed necessary to implement)
@@ -300,7 +310,10 @@ Second Modification Attempt Reply:
 	DiceRoll - The set of 5 dice made up of the Keepers from second_modification_attempt 
 			   and filled in with the next dice rolls of the full_dice_roll made at 
 			   the beginning of the game by the GM.
-	GameState - The current scorecards of both players
+	GameState - The current scorecards of both players, and history of game. 
+				Score cards are dictionaries with keys like 'aces' with the score 
+				assigned or 'no_value' if no score yet assigned. The history is
+				an array of each turn and what each player choice for each re-roll.
 	MatchState - How many games each player has won so far and how many games in 
 	 			 the match to play (and possibly a play-by-play or scorecard of 
 	 			 previous games if deemed necessary to implement)
