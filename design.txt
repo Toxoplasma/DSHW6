@@ -24,6 +24,7 @@ Data:
 	logged_in_players - A list of all the players currently logged in
 	registered_players - A list of all the registered players
 	tournament_stats - All the stats from finished tournaments for each player
+	ongoing_tournaments - A list of ongoing tournaments.
 
 
     * Handles players logging in. A successful login always adds the player to
@@ -48,6 +49,7 @@ Data:
       moving them to the end of the list.
     * Receives and handles requests from the environment for players' stats.
     * Receives stats from Tournament Manager(s) to add to tournament_stats
+    * When it receives the winner of the tournament, remove it from ongoing_tournaments.
 
 Tournament Manager
 ==================
@@ -374,3 +376,4 @@ GM Initialization:
  	sent the players in the match, and will organize a single game between those 
  	players. It is also sent the completed games in the match, so that the players 
  	can be sent this (in case their mastermind strategy depends on it somehow).
+
