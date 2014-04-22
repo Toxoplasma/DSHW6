@@ -79,3 +79,5 @@ log2(Num) ->
 rand_seq(M, N) ->
   [random:uniform(N) || X <- lists:seq(1,M)].
 
+
+
