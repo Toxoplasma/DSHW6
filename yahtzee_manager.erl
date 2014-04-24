@@ -10,13 +10,32 @@
 -export ([main/1]).
 
 main([Name]) ->
-  %% Start kernal, cmd daemon, register name
+  init(Name);
+main([Name, Seed]) ->
+  init(Name, Seed);
+main(_Other) ->
+  utils:log("Incorrect use. Usage: erl -noshell -run main <name> [<seed>]").
 
-  utils:log("Registering yahtzee_manager under name ~p", [Name]),
-  utils:log("yahtzee_manager is ready to go.");
+%% Start kernal, cmd daemon, register name
+init(Name) ->
+    Seed = now(),
+    init(Name, Seed).
 
-  %% Go into listening state (or use gen_server) waiting for registration/logins, 
-  %% tournament starts, and stats requests
-main(Other) ->
-  utils:log("Incorrect use. Usage: erl -noshell -run main <name>").
+%% If you desire to init with a given seed. Good for reproducing tests
+init(Name, Seed = {A1, A2, A3}) ->
+    _ = os:cmd("epmd -daemon"),
+    utils:log("Seeding random with ~p", [Seed]),
+    random:seed(A1, A2, A3),
+    net_kernel:start([list_to_atom(Name), shortnames]),
+    utils:log("Registered as ~w", [node()]),
+    listen(dict:new(), [], []).
+
+%% Listen for messages
+listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTournaments) ->
+  receive
+    Other ->
+      utils:log("ERROR - Message type not recognized: ~p", [Other]),
+      listen(R, C, O)
+  end.
+
 

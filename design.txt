@@ -22,8 +22,8 @@ Description:
 	manager for overall stats of past tournaments.
 
 Data:
-	logged_in_players - A list of all the players currently logged in
 	registered_players - A list of all the registered players
+	logged_in_players - A list of all the players currently logged in
 	tournament_stats - All the stats from finished tournaments for each player
 	ongoing_tournaments - A list of ongoing tournaments.
 
