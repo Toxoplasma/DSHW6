@@ -60,8 +60,8 @@ Description:
 	and a number of games per match (k > 0 and odd).
 
 Data:
-	player_list - A list of all players still in the tournament
-	logged_in_players - A list of all the players still logged (a subset of player_list)
+	player_list - A list of all players still in the tournament (dictionary)
+	logged_in_players - A list of all the players still logged (a subset of player_list. the player's value is set to 'no_value')
 	m - There are 2^m initial slots
 	k - Each match is best out of k games
 	tournament_stats - How each player is doing in the tournament
