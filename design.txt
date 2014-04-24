@@ -12,6 +12,7 @@ Table of Contents:
 	* Player Process
 	* Suggested Protocol
 	* Messages in the System
+	* Correctness Argument
 
 Main Manager
 ============
@@ -366,8 +367,8 @@ TM Initializer:
   	match results. 
 
 Tournament Ended:
-  	Sent by a TM to the environment to notify it that a tournament has finished. C
-  	ontains the Ref of the tournament as well as the winner.
+  	Sent by a TM to the environment to notify it that a tournament has finished.
+  	Contains the Ref of the tournament as well as the winner.
 
 MM Initialization:
   	MMs are started by TMs to handle a specific match. When a MM is created, it 
@@ -382,8 +383,45 @@ GM Initialization:
 Correctness Argument
 ====================
 
+<<<<<<< HEAD
 Our algorithm correctly handles new players joining as well as players rejoining after leaving or crashing. When a player first joins, they will be potentially added to tournaments as they begin. The main manager stores their password/key for later to ensure that we correctly handle possible later crashes and rejoins. When a player joins with a password, the main manager checks that this is the correct player and sends messages to relevant managers to ensure that the player is contacted to continue any matches and tournaments it is in.
 
 When a main manager is told to start a tournament, it randomly selects the specified number of players and begins a tournament, as described in the assignment. Notably, players can't cheat in tournaments, as all games are managed by GMs that can easily detect a player's cheating, as the GM maintains a copy of the player's rolls and scorecard, and ensures that they don't attempt to make any illegal moves. This is described further in the GM description.
 
 Our system also correctly handles players crashing. When a player crashes midgame, the GM (which monitors the players in the game) immediately reports that the game is over and that the non-crashed player has won. The MM (which is also monitoring the players in the match) will then wait the alotted amount of time for the crashed player to log back in and continue the match. When the player does log in, the main manager will send a message through the TM to the match manager with the player's new PID so the match can continue. We're guaranteed that this message will arrive, since the rejoin notification is sent to all TMs. Then the match continues as it should. If a player crashes between matches, the TM will know this, as it monitors the players in the tournament, and will again wait the alotted amount of time before replacing the player with a bye. When a player crashes and isn't in any tournaments, rejoining is very simple, as we don't need to do anything other than restore them to the list of players eligible for tournaments. 
+=======
+Our algorithm correctly handles new players joining as well as 
+players rejoining after leaving or crashing. When a player first 
+joins, they will be potentially added to tournaments as they begin. 
+The main manager stores their password/key for later to ensure that 
+we correctly handle possible later crashes and rejoins. When a 
+player joins with a password, the main manager checks that this is 
+the correct player and sends messages to relevant managers to ensure 
+that the player is contacted to continue any matches and tournaments 
+it is in.
+
+When a main manager is told to start a tournament, it randomly 
+selects the specified number of players and begins a tournament, as 
+described in the assignment. Notably, players can't cheat in 
+tournaments, as all games are managed by GMs that can easily detect 
+a player's cheating, as the GM maintains a copy of the player's 
+rolls and scorecard, and ensures that they don't attempt to make any 
+illegal moves. This is described further in the GM description.
+
+Our system also correctly handles players crashing. When a player 
+crashes midgame, the GM (which monitors the players in the game) 
+immediately reports that the game is over and that the non-crashed 
+player has won. The MM (which is also monitoring the players in the 
+match) will then wait the alloted amount of time for the crashed 
+player to log back in and continue the match. When the player does 
+log in, the main manager will send a message through the TM to the 
+match manager with the player's new PID so the match can continue. 
+We're guaranteed that this message will arrive, since the rejoin 
+notification is sent to all TMs. Then the match continues as it 
+should. If a player crashes between matches, the TM will know this, 
+as it monitors the players in the tournament, and will again wait 
+the alloted amount of time before replacing the player with a bye. 
+When a player crashes and isn't in any tournaments, rejoining is 
+very simple, as we don't need to do anything other than restore them 
+to the list of players eligible for tournaments.
+>>>>>>> 145c2db7bd90bfb5f6b60209cbf4b99aa67c8cb3
