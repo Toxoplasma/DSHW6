@@ -17,10 +17,9 @@
           pow2/1,
           dlog/2,
           dlog/3,
-          modSeq/3,
-          modInc/2,
-          modDec/2,
-          droplast/1]).
+          droplast/1,
+          rand_seq/2,
+          rand_split/2]).
 
 %% Prints a time stamp.
 timestamp() ->
@@ -76,8 +75,19 @@ log2(Num) ->
   logB(Num, 2).
 
 %% Generates a list of M random numbers, each between 1 and N
-rand_seq(M, N) ->
-  [random:uniform(N) || X <- lists:seq(1,M)].
+rand_seq(N, M) ->
+  [random:uniform(N) || _X <- lists:seq(1,M)].
 
+%% Splits the list into N randomly selected items on one side and the rest on the other.
+rand_split(N, L) ->
+  rand_split(N, [], L).
 
+rand_split(_N, L, []) ->
+  {L, []};
+rand_split(0, L, R) ->
+  {L, R};
+rand_split(N, L, R) ->
+  Item = lists:nth(random:uniform(length(R)), R),
+  Rs = lists:delete(Item, R),
+  rand_split(N - 1, [Item | L], Rs).
 
