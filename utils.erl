@@ -19,7 +19,8 @@
           dlog/3,
           droplast/1,
           rand_seq/2,
-          rand_split/2]).
+          rand_split/2,
+          replace/3]).
 
 %% Prints a time stamp.
 timestamp() ->
@@ -90,4 +91,9 @@ rand_split(N, L, R) ->
   Item = lists:nth(random:uniform(length(R)), R),
   Rs = lists:delete(Item, R),
   rand_split(N - 1, [Item | L], Rs).
+
+%% Replaces the nth element with E in list L
+replace(N, E, L) ->
+  {L1, L2} = lists:split(N - 1, L),
+  L1 ++ [E | tl(L2)].
 
