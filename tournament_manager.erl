@@ -1,0 +1,6 @@
+%% Players - dictionary of name to pid
+%%
+init([Players, M, K]) ->
+  %% TODO: brack stuff. start running the tournament and starting 
+  %% matches and stuff
+  ;
