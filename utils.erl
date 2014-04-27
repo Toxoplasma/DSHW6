@@ -97,3 +97,11 @@ replace(N, E, L) ->
   {L1, L2} = lists:split(N - 1, L),
   L1 ++ [E | tl(L2)].
 
+
+% %% Sends the Msg to each Pid in Pids
+% send(Msg, []) ->
+%   utils:log("All messages of type ~p have been sent", [Msg]);
+% send(Msg, [Pid | Pids]) ->
+%   utils:log("Sending message ~p to ~p", [Msg, Pid]),
+%   Pid ! Msg,
+%   send(Msg, Pids).
