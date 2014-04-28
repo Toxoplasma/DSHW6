@@ -37,7 +37,7 @@ init(Name, Seed = {A1, A2, A3}) ->
 %% R = a dictionary of usernames to {password, list-of-tourn-stats}
 %% C = a dictionary of usernames to {pid, Ref}
 listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTournaments) ->
-  utils:dlog("YM: All current users: ~p", [C], ?DEBUG),
+  utils:dlog("YM: All current users: ~p", [dict:to_list(C)], ?DEBUG),
   receive
     {login, Pid, UserName, PassWord} ->
       utils:log("YM: Received login message from ~p", [UserName]),
@@ -75,7 +75,8 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTourn
         false ->
           utils:log("YM: Player ~p is not currently logged in.", [UserName])
       end;
-    {request_tournament, Pid, {N = _NumberOfPlayers, K = _GamesPerMatch}} ->
+    {request_tournament, Pid, {N = _NumberOfPlayers, K = _GamesPerMatch}} 
+          when ((K > 0) and (K rem 2 == 1))->
       utils:log("YM: Received a request_tournament of ~p players, best of ~p games per match.", [N, K]),
       Tid = spawn(tournament_manager, init, [C, N, K, Pid, self()]),
       listen(R, C, [Tid, O]);

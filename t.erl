@@ -14,7 +14,8 @@
 -export([init/1,
          init/2,
          connect/1,
-         login/3]).
+         login/3,
+         request_tournament/3]).
 
 -define (TIMEOUT, 10000).
 
@@ -35,7 +36,8 @@ init(Node, Seed = {A1, A2, A3}) ->
     net_kernel:start([testy, shortnames]),
     utils:log("Seeding random with ~p", [Seed]),
     random:seed(A1, A2, A3),
-    connect(Node).
+    connect(Node),
+    {yahtzee_manager, Node}.
 
 %% Used to (re)connect to the original node for global registry access.
 connect(Node) ->
@@ -46,9 +48,17 @@ connect(Node) ->
             utils:log("Failed to Connect to ~p", [Node])
     end.
 
+%% Fake logs a player in and returns the LoginTicket for that fake player
 login(Pid, UserName, PassWord) ->
     Pid ! {login, self(), UserName, PassWord},
     receive
-        Msg -> {logged_in, _PayerPid, Ref} = Msg
+        Msg -> {logged_in, _PayerPid, LoginTicket} = Msg
     end,
-    Ref.
+    LoginTicket.
+
+request_tournament(Pid, N, K) ->
+    Pid ! {request_tournament, self(), {N, K}},
+    receive
+        {tournament_started, ReplyPid, {Tid, Players, _}} ->
+            utils:log("Players: ~p", [Players])
+    end.
