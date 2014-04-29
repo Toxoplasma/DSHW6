@@ -10,6 +10,7 @@
 -export ([main/1]).
 
 -define (DEBUG, true).
+-define (TIMEOUT, 5000).
 
 main([Name]) ->
   init(Name);
@@ -47,7 +48,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTourn
             {PassWord, _Stats} ->
               utils:log("YM: Sending logged_in message to returning player ~p", [UserName]),
               Ref = make_ref(),
-              Pid ! {logged_in, self(), Ref},
+              Pid ! {logged_in, self(), UserName, Ref},
               notify_tournaments(UserName, Pid, O),
               listen(R, dict:store(UserName, {Pid, Ref}, C), O);
             {_WrongPassword, _Stats} ->
@@ -57,7 +58,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTourn
         false ->
           utils:log("YM: Sending logged_in message to new player ~p", [UserName]),
           Ref = make_ref(),
-          Pid ! {logged_in, self(), Ref},
+          Pid ! {logged_in, self(), UserName, Ref},
           listen(dict:store(UserName, {PassWord, []}, R), dict:store(UserName, {Pid, Ref}, C), O)
       end;
     {logout, _Pid, UserName, Ref} ->
@@ -76,10 +77,20 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, O = _OngoingTourn
           utils:log("YM: Player ~p is not currently logged in.", [UserName])
       end;
     {request_tournament, Pid, {N = _NumberOfPlayers, K = _GamesPerMatch}} 
-          when ((K > 0) and (K rem 2 == 1))->
+          when ((K > 0) and (K rem 2 == 1) and (N > 0))->
       utils:log("YM: Received a request_tournament of ~p players, best of ~p games per match.", [N, K]),
-      Tid = spawn(tournament_manager, init, [C, N, K, Pid, self()]),
-      listen(R, C, [Tid, O]);
+      
+      %% Register up to N players in the tournament (randomly selected)
+      {RandomSelection, Extra} = utils:rand_split(N, dict:to_list(C)),
+      Tid = make_ref(),
+      send_start_tournament(RandomSelection, Tid),
+      TournamentPlayers = receive_accept_tournament(RandomSelection, Extra, [], Tid),
+      utils:log("TM: Sending outside world confirmation of the tournament starting."),
+      utils:dlog("Starting tournament with players: ~p", [TournamentPlayers], ?DEBUG),
+      Pid ! {tournament_started, self(), {Tid, [P || {P, _LoginTicket} <- TournamentPlayers], no_value}},
+
+      TMPid = spawn(tournament_manager, init, [TournamentPlayers, N, K, self()]),
+      listen(R, C, [{Tid, TMPid} | O]);
     {tournament_status, Pid, Tid} -> 
       %% TODO: Return stats of tournament requested, possibly forward it along to the tournament
       huh;
@@ -100,4 +111,43 @@ notify_tournaments(UserName, Pid, {O, Os} = _OngoingTournaments) ->
   O ! {player_notification, UserName, Pid},
   notify_tournaments(UserName, Pid, Os).
 
+%% Sends a start_tournament message to each player
+send_start_tournament([], _Tid) ->
+  done;
+send_start_tournament([{UserName, {Pid, _LoginTicket}} | Ps], Tid) ->
+  utils:log("TM: Sending start_tournament message to ~p", [UserName]),
+  Pid ! {start_tournament, self(), UserName, Tid},
+  send_start_tournament(Ps, Tid).
 
+%% Assemble the player list
+receive_accept_tournament([], [], AcceptedPlayers, _Tid) ->
+  utils:log("TM: Player list has been generated. There are ~p players.", [length(AcceptedPlayers)]),
+  utils:dlog("TM: Player list and pids: ~p", [AcceptedPlayers], ?DEBUG),
+  AcceptedPlayers;
+receive_accept_tournament([{UserName, {_OldPid, LoginTicket}} | Players], Extra, AcceptedPlayers, Tid) ->
+  receive
+    {accept_tournament, Pid, UserName, {Tid, LoginTicket}} ->
+      utils:log("TM: Received accept_tournament message from ~p.", [UserName]),
+      %% TODO: monitor them
+      receive_accept_tournament(Players, Extra, [{UserName, Pid} | AcceptedPlayers], Tid);
+    {reject_tournament, _Pid, UserName, {Tid, LoginTicket}} ->
+      utils:log("TM: Received reject_tournament message from ~p", [UserName]),
+      case Extra of
+        [E | Es] ->
+          send_start_tournament([E], Tid),
+          receive_accept_tournament([E | Players], Es, AcceptedPlayers, Tid);
+        [] ->
+          utils:log("No extra players to send a start_tournament message."),
+          receive_accept_tournament(Players, [], AcceptedPlayers, Tid)
+      end
+  after ?TIMEOUT ->
+    utils:log("TM: Timed out waiting for player ~p.", [UserName]),
+    case Extra of
+      [E | Es] ->
+        send_start_tournament([E], Tid),
+        receive_accept_tournament([E | Players], Es, AcceptedPlayers, Tid);
+      [] ->
+        utils:log("No extra players to send a start_tournament message."),
+        receive_accept_tournament(Players, [], AcceptedPlayers, Tid)
+    end
+  end.
