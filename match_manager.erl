@@ -126,7 +126,7 @@ round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 	Play1Ref = make_ref(),
 	utils:log("MM: (~p) Messaging player ~p for action...", [GID, P1]),
-	P1PID ! {play_request, self(), P1Name, {Play1Ref, TID, GID, TurnNum, lists:sublist(Dice, 1, 5), P1Card, P2Card}},
+	P1PID ! {play_request, self(), P1Name, {Play1Ref, TID, GID, TurnNum, Dice, P1Card, P2Card}},
 	receive
 		{play_action, P1PID, P1Name, {Play1Ref, TID, GID, TurnNum, DiceKept, ScorecardLine}} ->
 			{response, {DiceKept, ScorecardLine}}
