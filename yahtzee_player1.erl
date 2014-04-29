@@ -4,8 +4,6 @@
 -module(yahtzee_player1).
 -export(main/1).
 
--import(utils).
-
 -define(LOGINPID, 1).
 -define(LOGINTICKET, 2).
 
