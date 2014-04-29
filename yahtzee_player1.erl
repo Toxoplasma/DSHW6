@@ -27,7 +27,7 @@ send_register_messages([], _Username, _Password, Tickets) ->
 send_register_messages([Name | YMNames], Username, Password, Tickets) ->
 	%Send the manager a login message
 	plog("Logging in with manager ~p", [Name], Username),
-	Pid = whereis_name(Name),
+	Pid = {yahtzee_manager, list_to_atom(Name)},%whereis_name(Name),
 	Pid ! {login, self(), Username, {Username, Password}},
 
 	%receive the ticket from the login manager
