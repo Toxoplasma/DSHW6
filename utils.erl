@@ -1,8 +1,8 @@
 %%% -------------------------------------------------------------------
 %%% CSCI182E - Distributed Systems
-%%% @author Alejandro Frias, Ravi Kumar, David Scott
+%%% @author Alejandro Frias, Ravi Kumar
 %%%
-%%% Helpful utility functions used for Homework 5.
+%%% Helpful utility functions used for Homework 6.
 %%%--------------------------------------------------------------------
 
 
