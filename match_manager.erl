@@ -2,6 +2,7 @@
 
 -export ([init/5]).
 
+-define(SCORECARDSIZE 14)
 
 %% TODO: Game manager is just a function of match_manager. Separate files only if its huge
 
@@ -35,7 +36,9 @@ game({P1Name, P1PID}, {P2Name, P2PID}, K, TID, NumTies) when NumTies < K/2 ->
 	GID = make_ref(),
 	%Generate the numbers for the game, assuming numTimes < 6
 	Dice = utils:rand_seq(6, 15),
-	P1PID ! {play_request, TID, GID, 1, lists:sublist(Dice, 1, 5), hi},
+	P1Card = [0 || _ <- lists:seq(1,?SCORECARDSIZE)],
+	P1Card = [0 || _ <- lists:seq(1,?SCORECARDSIZE)],
+	P1PID ! {play_request, TID, GID, 1, lists:sublist(Dice, 1, 5), P1Card},
 	hi.
 	%P1 round 1
 
