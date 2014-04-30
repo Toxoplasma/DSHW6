@@ -24,18 +24,18 @@ init(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef) ->
 
 
 match(bye, PlayerTwo, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 
-	utils:log("MM: Winner is ~p", [PlayerTwo]),
+	utils:log("MM: Match winner is ~p", [PlayerTwo]),
 	TMID ! {win, MatchRef, PlayerTwo, bye};
 match(PlayerOne, bye, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 
-	utils:log("MM: Winner is ~p", [PlayerOne]),
+	utils:log("MM: Match winner is ~p", [PlayerOne]),
 	TMID ! {win, MatchRef, PlayerOne, bye};
 
 match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {P1Score, _P2Score}) when P1Score > K/2 ->
-	utils:log("MM: Winner is ~p", [PlayerOne]),
+	utils:log("MM: Match winner is ~p", [PlayerOne]),
 	TMID ! {win, MatchRef, PlayerOne, PlayerTwo};
 
 match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P2Score > K/2 ->
-	utils:log("MM: Winner is ~p", [PlayerTwo]),
+	utils:log("MM: Match winner is ~p", [PlayerTwo]),
 	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
 match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
@@ -52,7 +52,7 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 				{login, P1Name, LoserNewPID} when P1Name == LoserName -> match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
 				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
 			after ?WAIT ->
-				utils:log("MM: Winner is ~p by timeout", [PlayerTwo]),
+				utils:log("MM: Match winner is ~p by timeout", [PlayerTwo]),
 				TMID ! {win, MatchRef, Winner, Loser}
 			end
 	end.
