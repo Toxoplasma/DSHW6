@@ -4,7 +4,6 @@
 -module(yahtzee_player1).
 -export([main/1]).
 
-
 -define(LOGINPID, 1).
 -define(LOGINTICKET, 2).
 
@@ -18,6 +17,8 @@ main([NetName, Username, Password | YMNames]) ->
 	Tickets = send_register_messages(YMNames, Username, Password, []),
 
 	%Now just chill and listen
+	plog("I am: {~p, ~p}.", [Username, self()], Username),
+	plog("Successfully logged in, waiting for messages.", Username),
 	listen(Username, Tickets),
 	plog("Uh oh! We shouldn't really be here.", Username),
 	hurray.
