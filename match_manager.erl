@@ -70,8 +70,8 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
 	utils:log("MM: (~p) Final scores are: ~p and ~p", [GID, P1Score, P2Score]),
 
 	if 
-		P1Score > P2Score -> P1;
-		P2Score > P1Score -> P2;
+		P1Score > P2Score -> {win, P1};
+		P2Score > P1Score -> {win, P2};
 		true -> game(P1, P2, K, TID, NumTies + 1)
 	end;
 
@@ -87,10 +87,10 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 
 	%Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
-		timeout -> P2;
+		timeout -> {timeout, P2};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
-				timeout -> P1;
+				timeout -> {timeout, P1};
 				NewP2Card -> %P2 did his stuff for this round, so now we recurse with new cards
 					set(P1, P2, NewP1Card, NewP2Card, K, GID, TID, NumTies, RoundNum + 1)
 			end
