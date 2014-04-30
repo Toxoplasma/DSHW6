@@ -53,8 +53,8 @@ game(P1, P2, K, TID, NumTies) ->
 	utils:log("MM: Starting game with ID ~p", [GID]),
 
 	%make scorecards
-	P1Card = [0 || _ <- lists:seq(1,?SCORECARDSIZE)],
-	P2Card = [0 || _ <- lists:seq(1,?SCORECARDSIZE)],
+	P1Card = [-1 || _ <- lists:seq(1,?SCORECARDSIZE-1)] ++ [0],
+	P2Card = [-1 || _ <- lists:seq(1,?SCORECARDSIZE-1)] ++ [0],
 
 	Winner = set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 1),
 	utils:log("MM: (~p) Game finished! Winner: ~p", [GID, Winner]),
@@ -103,6 +103,7 @@ round({P1Name, P1PID}, TID, GID, Dice, _RestDice, P1Card, P2Card, 3) ->
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
 			NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+			utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
 			NewCard;
 		timeout ->
 			timeout
