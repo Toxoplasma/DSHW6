@@ -38,9 +38,9 @@ match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P
 	utils:log("MM: Winner is ~p", [PlayerTwo]),
 	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
-match(PlayerOne = {P1Name, P1PID}, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
+match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
 	case game(PlayerOne, PlayerTwo, K, TID, 0) of
-		{win, Winner, Loser} ->
+		{win, Winner, _Loser} ->
 			if
 				Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
 				Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
@@ -50,7 +50,7 @@ match(PlayerOne = {P1Name, P1PID}, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, Ma
 			%Wait for the guy to come back
 			receive
 				{login, P1Name, LoserNewPID} when P1Name == LoserName -> match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
-				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
+				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
 			after ?WAIT ->
 				utils:log("MM: Winner is ~p by timeout", [PlayerTwo]),
 				TMID ! {win, MatchRef, Winner, Loser}
