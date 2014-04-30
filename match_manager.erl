@@ -160,6 +160,9 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 	end.
 
 
+cheating(Slot, Card) ->
+	lists:nth(Slot, Card) == -1.
+
 %TODO: Make it so it actually scores stuff properly
 addScoreToCard(Dice, Scorecard, Slot) ->
 	utils:replace(Slot, lists:sum(Dice), Scorecard).
@@ -171,3 +174,4 @@ cardScore(Scorecard) ->
 
 %TODO: SET TIMEOUT VALUE
 %TODO: CHEATING DETECTION
+%TODO: Add yahtzee bonuses
