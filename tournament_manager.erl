@@ -53,7 +53,8 @@ start_matches(Bracket, K, Tid, MatchRefsAndPids) ->
 %% Also forwards login attempts to each match so they can reset the Pid of their crashed players
 %% Returns a list of the winners to be used for the next bracket
 finish_matches([], _YMid, Winners) ->
-  utils:log("TM: All matches for bracket have finished. Winners: ~p", [Winners]);
+  utils:log("TM: All matches for bracket have finished. Winners: ~p", [Winners]),
+  Winners;
 finish_matches([{MRef, MPid} | MatchRefsAndPids], YMid, Winners) ->
   receive
     {win, MRef, bye, bye} ->
