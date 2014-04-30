@@ -66,7 +66,6 @@ finish_matches([{MRef, MPid} | MatchRefsAndPids], YMid, Winners) ->
     {win, MRef, Winner, Loser} ->
       utils:log("TM: Received a match result. Player ~p won against player ~p.", [Winner, Loser]),
       utils:log("TM: Sending match results to tournament manager for stat tracking."),
-      %% TODO: decide if security is needed here. Also add this message to YM
       YMid ! {match_result, Winner, Loser},
       finish_matches(MatchRefsAndPids, YMid, [Winner | Winners]);
     {login, UserName, Pid} ->
