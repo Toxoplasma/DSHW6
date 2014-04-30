@@ -67,7 +67,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
           %% Monitor new player
           MRef = monitor(process, Pid),
           Pid ! {logged_in, self(), UserName, MRef},
-          listen(dict:store(UserName, {PassWord, []}, R), dict:store(UserName, {Pid, MRef}, C), dict:store(MRef, UserName), T)
+          listen(dict:store(UserName, {PassWord, []}, R), dict:store(UserName, {Pid, MRef}, C), dict:store(MRef, UserName, M), T)
       end;
     {logout, _Pid, UserName, Ref} ->
       utils:log("YM: Received logout message from ~p", [UserName]),
