@@ -20,7 +20,9 @@
           droplast/1,
           rand_seq/2,
           rand_split/2,
-          replace/3]).
+          replace/3,
+          ceiling/1,
+          insert/3]).
 
 %% Prints a time stamp.
 timestamp() ->
@@ -92,16 +94,21 @@ rand_split(N, L, R) ->
   Rs = lists:delete(Item, R),
   rand_split(N - 1, [Item | L], Rs).
 
-%% Replaces the nth element with E in list L
+%% Replaces the Nth element with E in list L
 replace(N, E, L) ->
   {L1, L2} = lists:split(N - 1, L),
   L1 ++ [E | tl(L2)].
 
+%% Inserts element E just before the Nth element in list L
+insert(N, E, L) ->
+  {L1, L2} = lists:split(N - 1, L),
+  L1 ++ [E | L2].
 
-% %% Sends the Msg to each Pid in Pids
-% send(Msg, []) ->
-%   utils:log("All messages of type ~p have been sent", [Msg]);
-% send(Msg, [Pid | Pids]) ->
-%   utils:log("Sending message ~p to ~p", [Msg, Pid]),
-%   Pid ! Msg,
-%   send(Msg, Pids).
+%% Finds ceiling of N
+ceiling(N) ->
+  case trunc(N) == N of
+    true ->
+      trunc(N);
+    false ->
+      trunc(N) + 1
+  end.

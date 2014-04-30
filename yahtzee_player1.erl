@@ -2,7 +2,8 @@
 %% By Ravi Kumar and Alejandro Frias
 
 -module(yahtzee_player1).
--export(main/1).
+-export([main/1]).
+
 
 -define(LOGINPID, 1).
 -define(LOGINTICKET, 2).
@@ -67,9 +68,9 @@ listen(Username, Tickets) ->
 %Current action computation: Assign it to whatever first slot is free, no rerolls
 computeAction({Ref, Tid, Gid, RollNumber, _Dice, Scorecard, _OppScorecard}) ->
 	%Find first empty score
-	EmptyScores = findEmptyScores(Scorecard)
+	EmptyScores = findEmptyScores(Scorecard),
 	case EmptyScores of
-		[] -> plog("Someone sent us a full scorecard! Morons...");
+		[] -> utils:log("Someone sent us a full scorecard! Morons...");
 		_ ->
 			{Ref, Tid, Gid, RollNumber, [true, true, true, true, true], hd(EmptyScores)}
 	end.
@@ -93,4 +94,4 @@ plog(Message, Name) ->
  	io:format("~p: ~s~n", [Name, Message]).
 plog(Message, Format, Name) ->
 	S = io_lib:format(Message, Format),
-	log(S, Name).
+	plog(S, Name).
