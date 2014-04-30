@@ -101,9 +101,11 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 	%Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
 		timeout -> {timeout, P2};
+		cheating -> {win, P2, P1};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
 				timeout -> {timeout, P1};
+				cheating -> {win, P1, P2};
 				NewP2Card -> %P2 did his stuff for this round, so now we recurse with new cards
 					set(P1, P2, NewP1Card, NewP2Card, K, GID, TID, NumTies, RoundNum + 1)
 			end
@@ -115,9 +117,13 @@ round({P1Name, P1PID}, TID, GID, Dice, _RestDice, P1Card, P2Card, 3) ->
 	case turn({P1Name, P1PID}, TID, GID, 3, Dice, P1Card, P2Card) of
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
-			NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
-			utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
-			NewCard;
+			case cheating(ScoreSlot, P1Card) of
+				true -> cheating;
+				false ->
+					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+					utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
+					NewCard;
+			end
 		timeout ->
 			timeout
 	end;
@@ -130,8 +136,12 @@ round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 			round({P1Name, P1PID}, TID, GID, NewDice, NewRestDice, P1Card, P2Card, TurnNum + 1);
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
-			NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
-			NewCard;
+			case cheating(ScoreSlot, P1Card) of
+				true -> cheating;
+				false ->
+					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+					NewCard;
+			end
 		timeout ->
 			timeout
 	end.
