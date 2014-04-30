@@ -81,10 +81,12 @@ computeAction({Ref, Tid, Gid, RollNumber, _Dice, Scorecard, _OppScorecard}) ->
 findEmptyScores(Scorecard) -> findEmptyScores(Scorecard, [], 1).
 
 findEmptyScores([], Empty, _Index) -> lists:reverse(Empty);
+
 findEmptyScores([-1 | Rest], EmptySoFar, Index) ->
 	findEmptyScores(Rest, [Index | EmptySoFar], Index + 1);
+
 findEmptyScores([_ | Rest], EmptySoFar, Index) ->
-	findEmptyScores(Rest, EmptySoFar, Index).
+	findEmptyScores(Rest, EmptySoFar, Index + 1).
 
 	
 	
