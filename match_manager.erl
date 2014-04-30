@@ -3,7 +3,8 @@
 -export ([init/6]).
 
 -define(SCORECARDSIZE, 14).
--define(TIMEOUT, 10000).
+-define(GAMETIMEOUT, 10000).
+-define(WAIT, 60000).
 
 -define(DEBUG, true).
 
@@ -37,13 +38,25 @@ match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P
 	utils:log("MM: Winner is ~p", [PlayerTwo]),
 	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
-match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
-	Winner = game(PlayerOne, PlayerTwo, K, TID, 0),
-	if
-		Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
-		Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
-		true -> utils:log("MM: Something went terribly wrong!")
+match(PlayerOne = {P1Name, P1PID}, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
+	case game(PlayerOne, PlayerTwo, K, TID, 0) of
+		{win, Winner, Loser} ->
+			if
+				Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
+				Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
+				true -> utils:log("MM: Something went terribly wrong! Winner was: ~p", [Winner])
+			end;
+		{timeout, Winner, Loser = {LoserName, _OldPID}} ->
+			%Wait for the guy to come back
+			receive
+				{login, P1Name, LoserNewPID} when P1Name == LoserName -> match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
+				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
+			after ?WAIT ->
+				utils:log("MM: Winner is ~p by timeout", [PlayerTwo]),
+				TMID ! {win, MatchRef, Winner, Loser}
+			end
 	end.
+
 
 
 %NumTies is number of ties in a row
@@ -132,7 +145,7 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 		{play_action, P1PID, P1Name, {Play1Ref, TID, GID, TurnNum, DiceKept, ScorecardLine}} ->
 			utils:log("MM: (~p) ~p gave us action ~p", [GID, P1Name, {DiceKept, ScorecardLine}]),
 			{response, {DiceKept, ScorecardLine}}
-	after ?TIMEOUT ->
+	after ?GAMETIMEOUT ->
 		timeout
 	end.
 
@@ -147,3 +160,4 @@ cardScore(Scorecard) ->
 	Score.
 
 %TODO: SET TIMEOUT VALUE
+%TODO: CHEATING DETECTION
