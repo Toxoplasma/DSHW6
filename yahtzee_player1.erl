@@ -8,7 +8,7 @@
 -define(LOGINTICKET, 2).
 
 main([NetName, Username, Password | YMNames]) ->
-	%Boring erlang net stuff
+	%Boring erlang net stuffy
 	_ = os:cmd("epmd -daemon"),
     net_kernel:start([list_to_atom(NetName), shortnames]),
     %register(philosopher, self()),
@@ -99,3 +99,5 @@ plog(Message, Name) ->
 plog(Message, Format, Name) ->
 	S = io_lib:format(Message, Format),
 	plog(S, Name).
+
+%TODO: actually put dice in relevant spots
