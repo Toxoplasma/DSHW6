@@ -8,7 +8,7 @@
 -define(LOGINTICKET, 2).
 
 main([NetName, Username, Password | YMNames]) ->
-	%Boring erlang net stuff
+	%Boring erlang net stuffy
 	_ = os:cmd("epmd -daemon"),
     net_kernel:start([list_to_atom(NetName), shortnames]),
     %register(philosopher, self()),
@@ -81,10 +81,12 @@ computeAction({Ref, Tid, Gid, RollNumber, _Dice, Scorecard, _OppScorecard}) ->
 findEmptyScores(Scorecard) -> findEmptyScores(Scorecard, [], 1).
 
 findEmptyScores([], Empty, _Index) -> lists:reverse(Empty);
+
 findEmptyScores([-1 | Rest], EmptySoFar, Index) ->
 	findEmptyScores(Rest, [Index | EmptySoFar], Index + 1);
+
 findEmptyScores([_ | Rest], EmptySoFar, Index) ->
-	findEmptyScores(Rest, EmptySoFar, Index).
+	findEmptyScores(Rest, EmptySoFar, Index + 1).
 
 	
 	
@@ -97,3 +99,5 @@ plog(Message, Name) ->
 plog(Message, Format, Name) ->
 	S = io_lib:format(Message, Format),
 	plog(S, Name).
+
+%TODO: actually put dice in relevant spots

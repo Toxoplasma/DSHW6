@@ -38,9 +38,9 @@ match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P
 	utils:log("MM: Winner is ~p", [PlayerTwo]),
 	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
-match(PlayerOne = {P1Name, P1PID}, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
+match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
 	case game(PlayerOne, PlayerTwo, K, TID, 0) of
-		{win, Winner, Loser} ->
+		{win, Winner, _Loser} ->
 			if
 				Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
 				Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
@@ -50,7 +50,7 @@ match(PlayerOne = {P1Name, P1PID}, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, Ma
 			%Wait for the guy to come back
 			receive
 				{login, P1Name, LoserNewPID} when P1Name == LoserName -> match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
-				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
+				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
 			after ?WAIT ->
 				utils:log("MM: Winner is ~p by timeout", [PlayerTwo]),
 				TMID ! {win, MatchRef, Winner, Loser}
@@ -70,22 +70,28 @@ game(P1, P2, K, TID, NumTies) ->
 	P2Card = [-1 || _ <- lists:seq(1,?SCORECARDSIZE-1)] ++ [0],
 
 	Winner = set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 1),
-	utils:log("MM: (~p) Game finished! Winner: ~p", [GID, Winner]),
+	%utils:log("MM: (~p) Game finished! Winner: ~p", [GID, Winner]),
 	Winner.
 	
 
 %% helper function for game
 %% ie on the 14th we're done, figure out a winner
 set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
-	utils:log("MM: (~p) Game is over, final scorecards are ~p and ~p", [GID, P1Card, P2Card]),
+	utils:log("MM: (~p) Game is over, final scorecards are ~n  ~p and ~n  ~p", [GID, P1Card, P2Card]),
 	P1Score = cardScore(P1Card),
 	P2Score = cardScore(P2Card),
 	utils:log("MM: (~p) Final scores are: ~p and ~p", [GID, P1Score, P2Score]),
 
 	if 
-		P1Score > P2Score -> {win, P1};
-		P2Score > P1Score -> {win, P2};
-		true -> game(P1, P2, K, TID, NumTies + 1)
+		P1Score > P2Score -> 
+			utils:log("MM: (~p) Winner is: ~p", [GID, P1]),
+			{win, P1, P2};
+		P2Score > P1Score -> 
+			utils:log("MM: (~p) Winner is: ~p", [GID, P2]),
+			{win, P2, P1};
+		true -> 
+			utils:log("MM: (~p) Game was a tie, restarting with NumTies ~p", [GID, NumTies]),
+			game(P1, P2, K, TID, NumTies + 1)
 	end;
 
 %% Ordinary set, i.e. not on round 14
@@ -96,14 +102,16 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 		true -> P2Dice = utils:rand_seq(6, 15)
 	end,
 
-	utils:log("MM: (~p) Dice for round are ~p and ~p", [GID, P1Dice, P2Dice]),
+	utils:log("MM: (~p) Dice for round are ~n  ~p and ~n  ~p", [GID, P1Dice, P2Dice]),
 
 	%% Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
 		timeout -> {timeout, P2};
+		cheating -> {win, P2, P1};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
 				timeout -> {timeout, P1};
+				cheating -> {win, P1, P2};
 				NewP2Card -> %P2 did his stuff for this round, so now we recurse with new cards
 					set(P1, P2, NewP1Card, NewP2Card, K, GID, TID, NumTies, RoundNum + 1)
 			end
@@ -113,11 +121,15 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 %% 13 rounds per game
 round({P1Name, P1PID}, TID, GID, Dice, _RestDice, P1Card, P2Card, 3) ->
 	case turn({P1Name, P1PID}, TID, GID, 3, Dice, P1Card, P2Card) of
-		%If they shortcut to a slot
+		%If they shortcut to a slot, which they now must
 		{response, {_DiceKept, ScoreSlot}} ->
-			NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
-			utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
-			NewCard;
+			case cheating(ScoreSlot, P1Card) of
+				true -> cheating;
+				false ->
+					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+					utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
+					NewCard
+			end;
 		timeout ->
 			timeout
 	end;
@@ -130,8 +142,12 @@ round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 			round({P1Name, P1PID}, TID, GID, NewDice, NewRestDice, P1Card, P2Card, TurnNum + 1);
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
-			NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
-			NewCard;
+			case cheating(ScoreSlot, P1Card) of
+				true -> cheating;
+				false ->
+					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+					NewCard
+			end;
 		timeout ->
 			timeout
 	end.
@@ -151,6 +167,9 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 
 
 %% TODO: Make it so it actually scores stuff properly
+cheating(Slot, Card) ->
+	lists:nth(Slot, Card) =/= -1.
+
 addScoreToCard(Dice, Scorecard, Slot) ->
 	utils:replace(Slot, lists:sum(Dice), Scorecard).
 
@@ -161,3 +180,6 @@ cardScore(Scorecard) ->
 
 %TODO: SET TIMEOUT VALUE
 %TODO: CHEATING DETECTION
+
+%TODO: Add yahtzee bonuses
+%TODO: ACTUAL SCORING
