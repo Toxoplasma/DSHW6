@@ -20,10 +20,12 @@ run_tournament([{Winner, _}], _K, Tid, YMid) ->
 run_tournament(Players, K, Tid, YMid) ->
   %% Determine what the proper bracket size is for the number of players
   BracketSize = utils:pow2(utils:ceiling(utils:log2(length(Players)))),
+  utils:log("TM: Bracket Size: ~p", [BracketSize]),
 
   %% Determine the number of byes in this bracket
   NumByes = BracketSize - length(Players),
   Bracket = insert_byes(Players, NumByes),
+  utils:log("TM: Bracket = ~p", [Bracket]),
   MatchRefsAndPids = start_matches(Bracket, K, Tid, []),
   Winners = finish_matches(MatchRefsAndPids, YMid, []),
   run_tournament(Winners, K, Tid, YMid).
@@ -43,7 +45,7 @@ start_matches(Bracket, K, Tid, MatchRefsAndPids) ->
   Ref = make_ref(),
   {[PlayerOne, PlayerTwo], RestOfBracket} = lists:split(2, Bracket),
   utils:log("TM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
-  MPid = spawn(match_manager, init, [PlayerOne, PlayerTwo, K, self(), Tid]),
+  MPid = spawn(match_manager, init, [PlayerOne, PlayerTwo, K, self(), Tid, Ref]),
   start_matches(RestOfBracket, K, Tid, [{Ref, MPid} | MatchRefsAndPids]).
 
 %% Waits for matches to finish up by collecting the results
