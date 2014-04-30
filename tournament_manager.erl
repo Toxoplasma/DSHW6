@@ -60,10 +60,10 @@ finish_matches([{MRef, MPid} | MatchRefsAndPids], YMid, Winners) ->
     {win, MRef, bye, bye} ->
       utils:log("TM: Received a match result. Both players are byes."),
       finish_matches(MatchRefsAndPids, YMid, [bye | Winners]);
-    {win, MRef, {Winner, _}, bye} ->
+    {win, MRef, Winner, bye} ->
       utils:log("TM: Received a match result. Player ~p won against a bye.", [Winner]),
       finish_matches(MatchRefsAndPids, YMid, [Winner | Winners]);
-    {win, MRef, {Winner, _}, {Loser, _}} ->
+    {win, MRef, Winner, Loser} ->
       utils:log("TM: Received a match result. Player ~p won against player ~p.", [Winner, Loser]),
       utils:log("TM: Sending match results to tournament manager for stat tracking."),
       %% TODO: decide if security is needed here. Also add this message to YM

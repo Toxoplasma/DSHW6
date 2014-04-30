@@ -137,7 +137,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
       end;
 
 
-    {match_result, Winner, Loser} ->
+    {match_result, {Winner, _}, {Loser, _} } ->
       utils:log("YM: Match between winner ~p and loser ~p being stored in stats.", [Winner, Loser]),
       case dict:find(Winner, R) of
         {ok, {WPassword, WMWins, WMLosses, WTWins, WTLosses, WTPlayed}} ->
