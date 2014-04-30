@@ -1,6 +1,6 @@
 -module (match_manager).
 
--export ([init/5]).
+-export ([init/6]).
 
 -define(SCORECARDSIZE, 14).
 -define(TIMEOUT, 10000).
@@ -12,36 +12,36 @@
 
 %% PlayerX - {name, pid}
 %% TMID - tournament manager id
-init(PlayerOne, PlayerTwo, K, TMID, TID) ->
+init(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef) ->
   %% run upto K games, tally results and send them back to tournament
   utils:log("MM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
-  match(PlayerOne, PlayerTwo, K, TMID, TID, {0, 0}),
+  match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {0, 0}),
   utils:log("MM: Match between ~p and ~p has finished.", [PlayerOne, PlayerTwo]),
   match_done.
 
 
 
 
-match(bye, PlayerTwo, _K, TMID, _TID, {_P1Score, _P2Score}) -> 
+match(bye, PlayerTwo, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 
 	utils:log("MM: Winner is ~p", [PlayerTwo]),
-	TMID ! {win, PlayerTwo, bye};
-match(PlayerOne, bye, _K, TMID, _TID, {_P1Score, _P2Score}) -> 
+	TMID ! {win, MatchRef, PlayerTwo, bye};
+match(PlayerOne, bye, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 
 	utils:log("MM: Winner is ~p", [PlayerOne]),
-	TMID ! {win, PlayerOne, bye};
+	TMID ! {win, MatchRef, PlayerOne, bye};
 
-match(PlayerOne, _PlayerTwo, K, TMID, _TID, {P1Score, _P2Score}) when P1Score > K/2 ->
+match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {P1Score, _P2Score}) when P1Score > K/2 ->
 	utils:log("MM: Winner is ~p", [PlayerOne]),
-	TMID ! {match_done, PlayerOne};
+	TMID ! {win, MatchRef, PlayerOne, PlayerTwo};
 
-match(_PlayerOne, PlayerTwo, K, TMID, _TID, {_P1Score, P2Score}) when P2Score > K/2 ->
+match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P2Score > K/2 ->
 	utils:log("MM: Winner is ~p", [PlayerTwo]),
-	TMID ! {match_done, PlayerTwo};
+	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
-match(PlayerOne, PlayerTwo, K, TMID, TID, {P1Score, P2Score}) ->
+match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->
 	Winner = game(PlayerOne, PlayerTwo, K, TID, 0),
 	if
-		Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, {P1Score+1, P2Score});
-		Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, {P1Score, P2Score+1});
+		Winner == PlayerOne -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score+1, P2Score});
+		Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
 		true -> utils:log("MM: Something went terribly wrong!")
 	end.
 
@@ -70,8 +70,8 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
 	utils:log("MM: (~p) Final scores are: ~p and ~p", [GID, P1Score, P2Score]),
 
 	if 
-		P1Score > P2Score -> P1;
-		P2Score > P1Score -> P2;
+		P1Score > P2Score -> {win, P1};
+		P2Score > P1Score -> {win, P2};
 		true -> game(P1, P2, K, TID, NumTies + 1)
 	end;
 
@@ -87,10 +87,10 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 
 	%Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
-		timeout -> P2;
+		timeout -> {timeout, P2};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
-				timeout -> P1;
+				timeout -> {timeout, P1};
 				NewP2Card -> %P2 did his stuff for this round, so now we recurse with new cards
 					set(P1, P2, NewP1Card, NewP2Card, K, GID, TID, NumTies, RoundNum + 1)
 			end
@@ -130,6 +130,7 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 	P1PID ! {play_request, self(), P1Name, {Play1Ref, TID, GID, TurnNum, Dice, P1Card, P2Card}},
 	receive
 		{play_action, P1PID, P1Name, {Play1Ref, TID, GID, TurnNum, DiceKept, ScorecardLine}} ->
+			utils:log("MM: (~p) ~p gave us action ~p", [GID, P1Name, {DiceKept, ScorecardLine}]),
 			{response, {DiceKept, ScorecardLine}}
 	after ?TIMEOUT ->
 		timeout
