@@ -180,12 +180,8 @@ cheating(Slot, Card) ->
 	lists:nth(Slot, Card) =/= -1.
 
 
-isYahtzee([_A]) ->
-	true;
-isYahtzee([A, A | Rest]) ->
-	isYahtzee([A | Rest]);
-isYahtzee(_Dice) ->
-	false.
+isYahtzee(Dice) ->
+	lists:all(fun (Die) -> hd(Dice) == Die end, Dice).
 
 scoreUpperSection(Dice, Slot) ->
 	GoodDice = [Die || Die <= Dice, Die == Slot],
@@ -195,6 +191,9 @@ score_three_of_a_kind(Dice) ->
 
 
 hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
+
+isYahtzeeJoker(Dice, Scorecard) ->
+	isYahtzee(Dice) and hasYahtzee(Scorecard).
 
 %Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
@@ -233,12 +232,20 @@ cardScore(Scorecard) ->
 	TotalScore.
 
 %% how each different slot is scored
-score_small_straight(Dice) ->
+score_small_straight(Dice, Scorecard) ->
+	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
+	CheckSeq1 = lists:seq(hd(Sorted), lists:last(Sorted)),
+	CheckSeq2 = lists:seq(lists:nth(2, Sorted), lists:last(Sorted)),
+	case (CheckSeq1 == Sorted) or (CheckSeq2 == Sorted) or isYahtzeeJoker(Dice, Scorecard) of
+		true ->
+			30;
+		false ->
+			0
+	end.
 
-score_large_straight(Dice) ->
-	Sorted = lists:sort(Dice),
+score_large_straight(Dice, Scorecard) ->
 	CheckSeq = lists:seq(hd(Sorted), lists:last(Sorted)),
-	case Sorted == CheckSeq of
+	case (Sorted == CheckSeq) or isYahtzeeJoker(Dice, Scorecard) of
 		true ->
 			40;
 		false ->
@@ -246,7 +253,7 @@ score_large_straight(Dice) ->
 	end.
 
 score_yahtzee(Dice) ->
-	case lists:all(fun (Die) -> hd(Dice) == Die end, Dice) of
+	case isYahtzee(Dice) of
 		true ->
 			50;
 		false ->
