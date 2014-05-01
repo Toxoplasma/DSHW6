@@ -15,7 +15,8 @@
          init/2,
          connect/1,
          login/3,
-         request_tournament/3]).
+         request_tournament/3,
+         play/3]).
 
 -define (TIMEOUT, 10000).
 
@@ -63,3 +64,29 @@ request_tournament(Node, N, K) ->
             utils:log("Players: ~p", [Players]),
             Tid
     end.
+
+play(Pid, UserName, PassWord) ->
+    LoginTicket = login(Pid, UserName, PassWord),
+    receive
+        {start_tournament, ReplyPid, UserName, Tid} ->
+            utils:log("Received start_tournament for me: ~p!", [UserName]),
+            utils:log("Sending accept_tournament for Tid ~p", [Tid]),
+            ReplyPid ! {accept_tournament, self(), UserName, {Tid, LoginTicket}},
+            playing(UserName, Tid)
+    end.
+
+playing(UserName, Tid) ->
+    receive
+        {play_request, ReplyPid, UserName, {Ref, Tid, Gid, RollNumber, Dice, Scorecard, OppScorecard}} ->
+            utils:log("RollNumber: ~p", [RollNumber]),
+            utils:log("Scorecard: ~p", [Scorecard]),
+            utils:log("Opponent Scorecard: ~p", [OppScorecard]),
+            utils:log("Dice: ~p", [Dice]),
+            DiceKept = lists:map(fun (X) -> X == "t" end, lists:sublist(io:get_line("Dice to Keep (tttft): "), 5)),
+            Slot = list_to_integer(lists:sublist(io:get_line("Slot: ", 1))),
+            ReplyPid ! {play_action, self(), UserName, {Ref, Tid, Gid, RollNumber, DiceKept, Slot}};
+        {end_tournament, _ReplyPid, UserName, Tid} ->
+            utils:log("Finished Tournament.")
+    end.
+
+
