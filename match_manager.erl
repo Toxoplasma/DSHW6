@@ -188,6 +188,17 @@ cardScore(Scorecard) ->
 
 
 %% how each different slot is scored
+score_small_straight(Dice) ->
+
+score_large_straight(Dice) ->
+	Sorted = lists:sort(Dice),
+	CheckSeq = lists:seq(hd(Sorted), lists:last(Sorted)),
+	case Sorted == CheckSeq of
+		true ->
+			40;
+		false ->
+			0
+	end.
 
 score_yahtzee(Dice) ->
 	case lists:all(fun (Die) -> hd(Dice) == Die end, Dice) of
