@@ -18,7 +18,7 @@
 -define(DEBUG, true).
 
 %% TODO: Game manager is just a function of match_manager. Separate files only if its huge
-
+%TODO: Do a seed
 
 %% PlayerX - {name, pid}
 %% TMID - tournament manager id
@@ -58,13 +58,27 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 				true -> utils:log("MM: Something went terribly wrong! Winner was: ~p", [Winner])
 			end;
 		{timeout, bye, bye} ->
-			utils:log("MM: Match winner is bye because both players timed out..."),
-			TMID ! {win, MatchRef, bye, bye};
+			%Wait for both guys to come back
+			case waitForBoth(P1Name, P2Name) of
+				{timeout, bye, bye} -> 
+					utils:log("MM: Match winner is bye because both players timed out..."),
+					TMID ! {win, MatchRef, bye, bye};
+				{win, Winner, Loser} ->
+					utils:log("MM: Match winner is ~p because other guy timed out...", [Winner]),
+					TMID ! {win, MatchRef, Winner, Loser};
+				{back, NewP1, NewP2} ->
+					utils:log("MM: Both players are back!"),
+					match(NewP1, NewP2, K, TMID, TID, MatchRef, {P1Score, P2Score})
+			end;
 		{timeout, Winner, Loser = {LoserName, _OldPID}} ->
 			%Wait for the guy to come back
 			receive
-				{login, P1Name, LoserNewPID} when P1Name == LoserName -> match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
-				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
+				{login, P1Name, LoserNewPID} when P1Name == LoserName -> 
+					utils:log("MM: ~p has logged back in in time!", [P1Name]),
+					match({P1Name, LoserNewPID}, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
+				{login, P2Name, LoserNewPID} when P2Name == LoserName  -> 
+					utils:log("MM: ~p has logged back in in time!", [P2Name]),
+					match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
 			after ?WAIT ->
 				utils:log("MM: Match winner is ~p by timeout", [PlayerTwo]),
 				TMID ! {win, MatchRef, Winner, Loser}
@@ -72,6 +86,28 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 	end.
 
 
+waitForBoth(P1Name, P2Name) ->
+	utils:log("MM: Waiting for both players to log back in."),
+	receive
+		{login, P1Name, P1NewPid} -> 
+			utils:log("MM: ~p has logged back in!", [P1Name])
+	after ?WAIT ->
+		P1NewPid = p1failed
+	end,
+
+	receive
+		{login, P2Name, P2NewPid} ->
+			utils:log("MM: ~p has logged back in!", [P2Name])
+	after ?WAIT ->
+		P2NewPid = p2failed
+	end,
+
+	case {P1NewPid, P2NewPid} of
+		{p1failed, p2failed} -> {timeout, bye, bye};
+		{P1PID, p2failed} -> {win, {P1Name, P1PID}, {P2Name, junk}};
+		{p1failed, P2PID} -> {win, {P2Name, P2PID}, {P1Name, junk}};
+		{P1PID, P2PID} -> {back, {P1Name, P1PID}, {P2Name, P2PID}}
+	end.
 
 %% NumTies is number of ties in a row
 %% Handle the first round in a game, meaning generate new scorecards too
@@ -98,10 +134,10 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
 
 	if 
 		P1Score > P2Score -> 
-			utils:log("MM: (~p) Winner is: ~p", [GID, P1]),
+			utils:log("MM: (~p) Game winner is: ~p", [GID, P1]),
 			{win, P1, P2};
 		P2Score > P1Score -> 
-			utils:log("MM: (~p) Winner is: ~p", [GID, P2]),
+			utils:log("MM: (~p) Game winner is: ~p", [GID, P2]),
 			{win, P2, P1};
 		true -> 
 			utils:log("MM: (~p) Game was a tie, restarting with NumTies ~p", [GID, NumTies]),
@@ -122,14 +158,24 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
 		timeout -> 
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
-				timeout -> {win, bye, bye}; %If both players time out the game is done, bye wins
-				_ -> {timeout, P2, P1} %If the other guy is still there then he wins
+				timeout ->
+					utils:log("MM: (~p) Both players timed out! Aborting game.", [GID]),
+					{win, bye, bye}; %If both players time out the game is done, bye wins
+				_ -> 
+					utils:log("MM: (~p) ~p timed out!", [GID, P1]),
+					{timeout, P2, P1} %If the other guy is still there then he wins
 			end;
-		cheating -> {win, P2, P1};
+		cheating -> 
+			utils:log("MM: (~p) ~p is cheating!", [GID, P1]),
+			{win, P2, P1};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
-				timeout -> {timeout, P1, P2};
-				cheating -> {win, P1, P2};
+				timeout -> 
+					utils:log("MM: (~p) ~p timed out!", [GID, P2]),
+					{timeout, P1, P2};
+				cheating -> 
+					utils:log("MM: (~p) ~p is cheating!", [GID, P2]),
+					{win, P1, P2};
 				NewP2Card -> %P2 did his stuff for this round, so now we recurse with new cards
 					set(P1, P2, NewP1Card, NewP2Card, K, GID, TID, NumTies, RoundNum + 1)
 			end
@@ -160,7 +206,7 @@ round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 		{response, {DiceKept, 0}} ->
 			KeptDice = [Die || {Die, Keep} <- lists:zip(Dice, DiceKept), Keep == true],
 			{NewDice, NewRestDice} = lists:split(5 - length(KeptDice), RestDice),
-			round({P1Name, P1PID}, TID, GID, NewDice, NewRestDice, P1Card, P2Card, TurnNum + 1);
+			round({P1Name, P1PID}, TID, GID, KeptDice ++ NewDice, NewRestDice, P1Card, P2Card, TurnNum + 1);
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
 			case cheating(ScoreSlot, P1Card) of
