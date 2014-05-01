@@ -53,7 +53,7 @@ listen(Username, Tickets) ->
 			ReplyPID ! {accept_tournament, self(), Username, {TID, LoginTicket}};
 
 		%End tournament message
-		{end_tournament, _ReplyPID, _Username, TID} -> 
+		{end_tournament, _ReplyPID, Username, TID} -> 
 			plog("Received end tournament message with ID ~p", [TID], Username),
 			we_dont_care;
 
