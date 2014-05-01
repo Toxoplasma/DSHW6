@@ -23,13 +23,13 @@
 %% PlayerX - {name, pid}
 %% TMID - tournament manager id
 init(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef) ->
-  %% run upto K games, tally results and send them back to tournament
-  utils:log("MM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
-  match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {0, 0}),
-  utils:log("MM: Match between ~p and ~p has finished.", [PlayerOne, PlayerTwo]),
-  match_done.
-
-
+  	%% run upto K games, tally results and send them back to tournament
+	{A1, A2, A3} = now(),
+	random:seed(A1, A2, A3),
+	utils:log("MM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
+	match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {0, 0}),
+	utils:log("MM: Match between ~p and ~p has finished.", [PlayerOne, PlayerTwo]),
+	match_done.
 
 
 match(bye, PlayerTwo, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 
