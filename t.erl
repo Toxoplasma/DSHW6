@@ -15,7 +15,8 @@
          init/2,
          connect/1,
          login/3,
-         request_tournament/3]).
+         request_tournament/3,
+         get_stats/2]).
 
 -define (TIMEOUT, 10000).
 
@@ -48,6 +49,14 @@ connect(Node) ->
             utils:log("Failed to Connect to ~p", [Node])
     end.
 
+get_stats(Node, Username) ->
+    {yahtzee_manager, Node} ! {user_info, self(), Username},
+    receive
+        {user_status, _ReplyPid, Stats = {Username, MWins, MLosses, TPlayed, TWins}} ->
+            utils:log("Player ~p has ~p match wins, ~p match losses, ~p tournaments played, and ~p tournaments won", [Username, MWins, MLosses, TPlayed, TWins]),
+            Stats
+    end.
+
 %% Fake logs a player in and returns the LoginTicket for that fake player
 login(Pid, UserName, PassWord) ->
     Pid ! {login, self(), UserName, PassWord},
@@ -63,3 +72,6 @@ request_tournament(Node, N, K) ->
             utils:log("Players: ~p", [Players]),
             Tid
     end.
+
+
+%TODO: test that multiple managers works

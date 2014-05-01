@@ -135,10 +135,13 @@ round({P1Name, P1PID}, TID, GID, Dice, _RestDice, P1Card, P2Card, 3) ->
 		%If they shortcut to a slot, which they now must
 		{response, {_DiceKept, ScoreSlot}} ->
 			case cheating(ScoreSlot, P1Card) of
-				true -> cheating;
+				true -> 
+					utils:log("MM: (~p) ~p has been caught cheating!", [GID, P1Name]),
+					cheating;
 				false ->
+					utils:log("MM (~p) ~p is adding dice ~p to scorecard slot ~p in card~n  ~p", [GID, P1Name, Dice, ScoreSlot, P1Card]),
 					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
-					utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, P1Card]),
+					utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, NewCard]),
 					NewCard
 			end;
 		timeout ->
@@ -154,9 +157,13 @@ round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 		%If they shortcut to a slot
 		{response, {_DiceKept, ScoreSlot}} ->
 			case cheating(ScoreSlot, P1Card) of
-				true -> cheating;
+				true -> 
+					utils:log("MM: (~p) ~p has been caught cheating!", [GID, P1Name]),
+					cheating;
 				false ->
+					utils:log("MM (~p) ~p is adding dice ~p to scorecard slot ~p in card~n  ~p", [GID, P1Name, Dice, ScoreSlot, P1Card]),
 					NewCard = addScoreToCard(Dice, P1Card, ScoreSlot),
+					utils:log("MM: (~p) ~p's new scorecard is ~p.", [GID, P1Name, NewCard]),
 					NewCard
 			end;
 		timeout ->

@@ -120,10 +120,10 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
       listen(R, C, M, T);
 
     {user_info, Pid, UserName} ->
-      utils:log("Received user_info from ~p", [UserName]),
+      utils:log("YM: Received user_info for ~p", [UserName]),
       case dict:find(UserName, R) of
         {ok, {_Password, MWins, MLosses, TWins, TPlayed}} ->
-          utils:log("YM: Sending user_info to ~p", [UserName]),
+          utils:log("YM: Sending user_info for ~p", [UserName]),
           Pid ! {user_status, self(), {UserName, MWins, MLosses, TPlayed, TWins}};
         error ->
           utils:log("ERROR: ~p is not a registered player.", [UserName])
