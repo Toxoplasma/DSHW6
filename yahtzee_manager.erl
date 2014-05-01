@@ -38,6 +38,7 @@ init(Name, Seed = {A1, A2, A3}) ->
 %% R = a dictionary of usernames to {password, match-wins, match-losts, tournament-wins, tournament-losses, tournaments played}
 %% C = a dictionary of usernames to {pid, Ref}
 %% M = a dictionary of MonitorRef to UserName
+%% T = a dictionary of Tid to 
 listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs, T = _Tournaments) ->
   utils:dlog("YM: All current users: ~p", [dict:to_list(C)], ?DEBUG),
   receive
@@ -179,10 +180,12 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
 %% no_value and in sets it to the new Pid)
 notify_tournaments(UserName, _, []) ->
   utils:dlog("YM: Notified all tournaments of change of Pid (login or logout) of player ~p", [UserName], ?DEBUG);
-notify_tournaments(UserName, Pid, [{Tid, TMPid} | Os] = _OngoingTournaments) ->
+notify_tournaments(UserName, Pid, [{_, {complete, _}} | Ts]) ->
+  notify_tournaments(UserName, Pid, Ts);
+notify_tournaments(UserName, Pid, [{Tid, {in_progress, TMPid}} | Ts] = _Tournaments) ->
   utils:dlog("YM: Notifying tournament ~p of user ~p's new login Pid ~p.", [Tid, UserName, Pid], ?DEBUG),
   TMPid ! {login, UserName, Pid},
-  notify_tournaments(UserName, Pid, Os).
+  notify_tournaments(UserName, Pid, Ts).
 
 %% Sends a start_tournament message to each player
 send_start_tournament([], _Tid) ->
