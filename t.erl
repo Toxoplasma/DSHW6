@@ -79,9 +79,10 @@ request_tournament(Node, N, K) ->
 %TODO: test that multiple managers works
 play(Node, UserName, PassWord) ->
     Seed = now(),
-    play(Node, UserName, PassWord, Seed);
+    play(Node, UserName, PassWord, Seed).
+
 play(Node, UserName, PassWord, Seed) ->
-    Pid = init(Node, Seed)
+    Pid = init(Node, Seed),
     LoginTicket = login(Pid, UserName, PassWord),
     receive
         {start_tournament, ReplyPid, UserName, Tid} ->
