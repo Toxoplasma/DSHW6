@@ -149,20 +149,21 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
         {ok, {WPassword, {WMWins, WMLosses, WTWins, WTPlayed}}} ->
           utils:log("YM: Storing match win for winner ~p ", [Winner]),
           WStats = {WPassword, {WMWins + 1, WMLosses, WTWins, WTPlayed}},
-          listen(dict:store(Winner, WStats, R), C, M, T);
+          WR = dict:store(Winner, WStats, R);
         error ->
           utils:log("~p is not a registered player.", [Winner]),
-          listen(R, C, M, T)
+          WR = R
       end,
       case dict:find(Loser, R) of
         {ok, {LPassword, {LMWins, LMLosses, LTWins, LTPlayed}}} ->
           utils:log("YM: Storing match loss for loser ~p ", [Loser]),
           LStats = {LPassword, {LMWins, LMLosses + 1, LTWins, LTPlayed}},
-          listen(dict:store(Loser, LStats, R), C, M, T);
+          LR = dict:store(Loser, LStats, WR);
         error ->
           utils:log("~p is not a registered player.", [Loser]),
-          listen(R, C, M, T)
-      end;
+          LR = R
+      end,
+      listen(LR, C, M, T);
 
     {'DOWN', MonitorRef, _Type, _Object, Info} ->
       UserName = dict:fetch(MonitorRef, M),
