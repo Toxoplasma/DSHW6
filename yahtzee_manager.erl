@@ -147,7 +147,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
       utils:log("YM: Match between winner ~p and loser ~p being stored in stats.", [Winner, Loser]),
       case dict:find(Winner, R) of
         {ok, {WPassword, {WMWins, WMLosses, WTWins, WTPlayed}}} ->
-          utils:log("YM: Storing match win for ~p ", [Winner]),
+          utils:log("YM: Storing match win for winner ~p ", [Winner]),
           WStats = {WPassword, {WMWins + 1, WMLosses, WTWins, WTPlayed}},
           listen(dict:store(Winner, WStats, R), C, M, T);
         error ->
@@ -156,7 +156,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
       end,
       case dict:find(Loser, R) of
         {ok, {LPassword, {LMWins, LMLosses, LTWins, LTPlayed}}} ->
-          utils:log("YM: Storing match loss for ~p ", [Loser]),
+          utils:log("YM: Storing match loss for loser ~p ", [Loser]),
           LStats = {LPassword, {LMWins, LMLosses + 1, LTWins, LTPlayed}},
           listen(dict:store(Loser, LStats, R), C, M, T);
         error ->

@@ -17,7 +17,8 @@
          login/3,
          request_tournament/3,
          get_stats/2,
-         play/3]).
+         play/3,
+         play/4]).
 
 -define (TIMEOUT, 10000).
 
@@ -76,7 +77,11 @@ request_tournament(Node, N, K) ->
 
 
 %TODO: test that multiple managers works
-play(Pid, UserName, PassWord) ->
+play(Node, UserName, PassWord) ->
+    Seed = now(),
+    play(Node, UserName, PassWord, Seed);
+play(Node, UserName, PassWord, Seed) ->
+    Pid = init(Node, Seed)
     LoginTicket = login(Pid, UserName, PassWord),
     receive
         {start_tournament, ReplyPid, UserName, Tid} ->
