@@ -2,20 +2,20 @@
 
 -export ([init/6]).
 
--define(SCORECARDSIZE, 14).
--define(GAMETIMEOUT, 10000).
--define(WAIT, 60000).
+-define (SCORECARDSIZE, 14).
+-define (DEBUG, true).
+-define (GAMETIMEOUT, case ?DEBUG of true -> 60000; false -> 10000 end).
 
--define(UPPERSECTION, 6).
--define(THREE_OF_A_KIND, 7).
--define(FOUR_OF_A_KIND, 8).
--define(FULL_HOUSE, 9).
--define(SMALL_STRAIGHT, 10).
--define(LARGE_STRAIGHT, 11).
--define(YAHTZEE, 12).
--define(CHANCE, 13).
+-define (WAIT, 60000).
 
--define(DEBUG, true).
+-define (UPPERSECTION, 6).
+-define (THREE_OF_A_KIND, 7).
+-define (FOUR_OF_A_KIND, 8).
+-define (FULL_HOUSE, 9).
+-define (SMALL_STRAIGHT, 10).
+-define (LARGE_STRAIGHT, 11).
+-define (YAHTZEE, 12).
+-define (CHANCE, 13).
 
 %% TODO: Game manager is just a function of match_manager. Separate files only if its huge
 %TODO: Do a seed
@@ -23,13 +23,13 @@
 %% PlayerX - {name, pid}
 %% TMID - tournament manager id
 init(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef) ->
-  %% run upto K games, tally results and send them back to tournament
-  utils:log("MM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
-  match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {0, 0}),
-  utils:log("MM: Match between ~p and ~p has finished.", [PlayerOne, PlayerTwo]),
-  match_done.
-
-
+  	%% run upto K games, tally results and send them back to tournament
+	{A1, A2, A3} = now(),
+	random:seed(A1, A2, A3),
+	utils:log("MM: Starting match between ~p and ~p.", [PlayerOne, PlayerTwo]),
+	match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {0, 0}),
+	utils:log("MM: Match between ~p and ~p has finished.", [PlayerOne, PlayerTwo]),
+	match_done.
 
 
 match(bye, PlayerTwo, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) -> 

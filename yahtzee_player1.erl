@@ -8,15 +8,16 @@
 -define(LOGINTICKET, 2).
 
 main([NetName, Username, Password | YMNames]) ->
-	%Boring erlang net stuffy
+	%% Boring erlang net stuffy
 	_ = os:cmd("epmd -daemon"),
     net_kernel:start([list_to_atom(NetName), shortnames]),
-    %register(philosopher, self()),
+  	{A1, A2, A3} = now(),
+  	random:seed(A1, A2, A3),
 
-	%Register with all managers
+	%% Register with all managers
 	Tickets = send_register_messages(YMNames, Username, Password, []),
 
-	%Now just chill and listen
+	%% Now just chill and wait for some tournaments and stuffy
 	plog("I am: {~p, ~p}.", [Username, self()], Username),
 	plog("Successfully logged in, waiting for messages.", Username),
 	listen(Username, Tickets),
