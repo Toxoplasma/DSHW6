@@ -16,11 +16,8 @@
          connect/1,
          login/3,
          request_tournament/3,
-<<<<<<< HEAD
-         get_stats/2]).
-=======
+         get_stats/2,).
          play/3]).
->>>>>>> 3272632df8c5d1b46b38cffe9b63af123224f72b
 
 -define (TIMEOUT, 10000).
 
