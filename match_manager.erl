@@ -185,12 +185,12 @@ isYahtzee(Dice) ->
 
 %Assumes sorted dice
 isThreeOfAKind([_, _]) -> false;
-isThreeOfAKind([A, A, A | Rest]) -> true;
+isThreeOfAKind([A, A, A | _]) -> true;
 isThreeOfAKind([_ | Rest]) -> isThreeOfAKind(Rest).
 	
 
 scoreUpperSection(Dice, Slot) ->
-	GoodDice = [Die || Die <= Dice, Die == Slot],
+	GoodDice = [Die || Die <- Dice, Die == Slot],
 	lists:sum(GoodDice).
 
 
@@ -216,7 +216,7 @@ isYahtzeeJoker(Dice, Scorecard) ->
 
 %Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
-	case isYahtzee(Dice) and hasYahtzee(Scorecard) of
+	case isYahtzee(Dice) and hasYahtzee(Scorecard) and (lists:nth(hd(Dice), Scorecard) =/= -1) of
 		true ->
 			YahtzeeBonuses = lists:nth(14, Scorecard),
 			NewCard = utils:replace(14, YahtzeeBonuses + 1, Scorecard),
@@ -225,7 +225,7 @@ addScoreToCard(Dice, Scorecard, Slot) ->
 	end.
 
 %Make it actually put in the score correctly
-addScoreToCardHelper(Dice, Scorecard, Slot) when Slot <= ?UPPERSECTION ->
+addScoreToCardHelper(Dice, Scorecard, Slot) when Slot =< ?UPPERSECTION ->
 	utils:replace(Slot, scoreUpperSection(Dice, Slot), Scorecard);
 addScoreToCardHelper(Dice, Scorecard, Slot) ->
 	case Slot of
@@ -252,7 +252,6 @@ cardScore(Scorecard) ->
 	TotalScore.
 
 %% how each different slot is scored
-
 score_three_of_a_kind(Dice) ->
 	SortedDice = lists:sort(Dice),
 	case isThreeOfAKind(SortedDice) of
@@ -286,6 +285,7 @@ score_small_straight(Dice, Scorecard) ->
 	end.
 
 score_large_straight(Dice, Scorecard) ->
+	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
 	CheckSeq = lists:seq(hd(Sorted), lists:last(Sorted)),
 	case (Sorted == CheckSeq) or isYahtzeeJoker(Dice, Scorecard) of
 		true ->
