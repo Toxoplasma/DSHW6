@@ -59,6 +59,7 @@ login(Pid, UserName, PassWord) ->
 request_tournament(Node, N, K) ->
     {yahtzee_manager, Node} ! {request_tournament, self(), {N, K}},
     receive
-        {tournament_started, ReplyPid, {Tid, Players, _}} ->
-            utils:log("Players: ~p", [Players])
+        {tournament_started, _ReplyPid, {Tid, Players, _}} ->
+            utils:log("Players: ~p", [Players]),
+            Tid
     end.

@@ -170,12 +170,13 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 cheating(Slot, Card) ->
 	lists:nth(Slot, Card) =/= -1.
 
-addScoreToCard(Dice, Scorecard, Slot) ->
+%Make it actually put in the score correctly
+addScoreToCard(Dice, Scorecard, Slot) when Slot < 7 ->
 	utils:replace(Slot, lists:sum(Dice), Scorecard).
 
 cardScore(Scorecard) ->
 	First13 = lists:sublist(Scorecard, 13),
-	Score = lists:sum(First13) + 50 * lists:last(Scorecard),
+	Score = lists:sum(First13) + 100 * lists:last(Scorecard),
 	Score.
 
 %TODO: SET TIMEOUT VALUE
