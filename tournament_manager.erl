@@ -15,6 +15,10 @@ init(Players, K = _GamesPerMatch, Tid, YMid) ->
     random:seed(A1, A2, A3),
     run_tournament(Players, K, Tid, YMid).
 
+run_tournament([], _K, Tid, YMid) ->
+  utils:log("The tournament has no more players! It is now over."),
+  YMid ! {tournament_result, Tid, bye},
+  bye;
 run_tournament([{Winner, WinnerPID}], _K, Tid, YMid) ->
     utils:log("TM: Player ~p won tournament ~p.", [Winner, Tid]),
     WinnerPID ! {end_tournament, self(), Winner, Tid},

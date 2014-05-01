@@ -61,10 +61,10 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 			%Wait for both guys to come back
 			case waitForBoth(P1Name, P2Name) of
 				{timeout, bye, bye} -> 
-					utils:log("MM: Match winner is bye because both players timed out..."),
+					utils:log("MM: Match winner is bye because neither player returned."),
 					TMID ! {win, MatchRef, bye, bye};
 				{win, Winner, Loser} ->
-					utils:log("MM: Match winner is ~p because other guy timed out...", [Winner]),
+					utils:log("MM: Match winner is ~p because other guy didn't come back.", [Winner]),
 					TMID ! {win, MatchRef, Winner, Loser};
 				{back, NewP1, NewP2} ->
 					utils:log("MM: Both players are back!"),
@@ -80,7 +80,7 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 					utils:log("MM: ~p has logged back in in time!", [P2Name]),
 					match(PlayerOne, {P2Name, LoserNewPID}, K, TMID, TID, MatchRef, {P1Score+1, P2Score})
 			after ?WAIT ->
-				utils:log("MM: Match winner is ~p by timeout", [PlayerTwo]),
+				utils:log("MM: Match winner is ~p by timeout", [Winner]),
 				TMID ! {win, MatchRef, Winner, Loser}
 			end
 	end.
@@ -160,7 +160,7 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
 				timeout ->
 					utils:log("MM: (~p) Both players timed out! Aborting game.", [GID]),
-					{win, bye, bye}; %If both players time out the game is done, bye wins
+					{timeout, bye, bye}; %If both players time out the game is done, bye wins
 				_ -> 
 					utils:log("MM: (~p) ~p timed out!", [GID, P1]),
 					{timeout, P2, P1} %If the other guy is still there then he wins

@@ -16,6 +16,7 @@
          connect/1,
          login/3,
          request_tournament/3,
+         tournament_info/2,
          get_stats/2,
          play/3,
          play/4]).
@@ -75,6 +76,14 @@ request_tournament(Node, N, K) ->
             Tid
     end.
 
+tournament_info(Node, Tid) ->
+    {yahtzee_manager, Node} ! {tournament_info, self(), Tid},
+    receive
+        {tournament_status, _ReplyPid, {Tid, 'in_progress', undefined, _OptionalData}} ->
+            utils:log("Tournament ~p is still in progress.", [Tid]);
+        {tournament_status, _ReplyPid, {Tid, complete, Winner, _OptionalData}} ->
+            utils:log("Tournament ~p was won by ~p!.", [Tid, Winner])
+    end.
 
 %TODO: test that multiple managers works
 play(Node, UserName, PassWord) ->

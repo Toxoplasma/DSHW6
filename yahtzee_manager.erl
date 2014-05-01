@@ -136,6 +136,10 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
             end,
             listen(R, C, M, T);
 
+        {tournament_result, Tid, bye} ->
+            utils:log("YM: Tournament ~p has finished with winner ~p.", [Tid, bye]),
+            listen(R, C, M, dict:store(Tid, {complete, bye}, T));
+
         {tournament_result, Tid, Winner} ->
             case dict:find(Winner, R) of
                 {ok, {Password, {MWins, MLosses, TWins, TPlayed}}} ->
