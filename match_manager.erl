@@ -57,6 +57,9 @@ match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, 
 				Winner == PlayerTwo -> match(PlayerOne, PlayerTwo, K, TMID, TID, MatchRef, {P1Score, P2Score+1});
 				true -> utils:log("MM: Something went terribly wrong! Winner was: ~p", [Winner])
 			end;
+		{timeout, bye, bye} ->
+			utils:log("MM: Match winner is bye because both players timed out..."),
+			TMID ! {win, MatchRef, bye, bye};
 		{timeout, Winner, Loser = {LoserName, _OldPID}} ->
 			%Wait for the guy to come back
 			receive
@@ -117,7 +120,11 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 
 	%% Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
-		timeout -> {timeout, P2, P1};
+		timeout -> 
+			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
+				timeout -> {win, bye, bye}; %If both players time out the game is done, bye wins
+				_ -> {timeout, P2, P1} %If the other guy is still there then he wins
+			end;
 		cheating -> {win, P2, P1};
 		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
 			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
