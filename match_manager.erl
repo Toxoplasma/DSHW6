@@ -157,7 +157,7 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 	%% Call first guy's round
 	case round(P1, TID, GID, lists:sublist(P1Dice, 5), lists:sublist(P1Dice, 6, 10), P1Card, P2Card, 1) of
 		timeout -> 
-			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
+			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P2Card, P1Card, 1) of
 				timeout ->
 					utils:log("MM: (~p) Both players timed out! Aborting game.", [GID]),
 					{timeout, bye, bye}; %If both players time out the game is done, bye wins
@@ -168,8 +168,8 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 		cheating -> 
 			utils:log("MM: (~p) ~p is cheating!", [GID, P1]),
 			{win, P2, P1};
-		NewP1Card -> %P1 did his stuff for this round, so now we move on to p2
-			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P1Card, P2Card, 1) of
+		NewP1Card -> %%nP1 did his stuff for this round, so now we move on to p2
+			case round(P2, TID, GID, lists:sublist(P2Dice, 5), lists:sublist(P2Dice, 6, 10), P2Card, P1Card, 1) of
 				timeout -> 
 					utils:log("MM: (~p) ~p timed out!", [GID, P2]),
 					{timeout, P1, P2};
