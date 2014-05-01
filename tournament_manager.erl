@@ -13,8 +13,9 @@
 init(Players, K = _GamesPerMatch, Tid, YMid) ->
   run_tournament(Players, K, Tid, YMid).
 
-run_tournament([{Winner, _}], _K, Tid, YMid) ->
+run_tournament([{Winner, WinnerPID}], _K, Tid, YMid) ->
   utils:log("TM: Player ~p won tournament ~p.", [Winner, Tid]),
+  WinnerPID ! {end_tournament, self(), Winner, Tid},
   YMid ! {tournament_result, Tid, Winner},
   Winner;
 run_tournament(Players, K, Tid, YMid) ->

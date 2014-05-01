@@ -39,12 +39,14 @@ match(PlayerOne, bye, _K, TMID, _TID, MatchRef, {_P1Score, _P2Score}) ->
 	utils:log("MM: Match winner is ~p", [PlayerOne]),
 	TMID ! {win, MatchRef, PlayerOne, bye};
 
-match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {P1Score, _P2Score}) when P1Score > K/2 ->
+match(PlayerOne, PlayerTwo = {P2Name, P2PID}, K, TMID, TID, MatchRef, {P1Score, _P2Score}) when P1Score > K/2 ->
 	utils:log("MM: Match winner is ~p", [PlayerOne]),
+	P2PID ! {end_tournament, self(), P2Name, TID}, %message the loser that they're done
 	TMID ! {win, MatchRef, PlayerOne, PlayerTwo};
 
-match(PlayerOne, PlayerTwo, K, TMID, _TID, MatchRef, {_P1Score, P2Score}) when P2Score > K/2 ->
+match(PlayerOne = {P1Name, P1PID}, PlayerTwo, K, TMID, TID, MatchRef, {_P1Score, P2Score}) when P2Score > K/2 ->
 	utils:log("MM: Match winner is ~p", [PlayerTwo]),
+	P1PID ! {end_tournament, self(), P1Name, TID}, %message the loser that they're done
 	TMID ! {win, MatchRef, PlayerTwo, PlayerOne};
 
 match(PlayerOne = {P1Name, _P1PID}, PlayerTwo = {P2Name, _P2PID}, K, TMID, TID, MatchRef, {P1Score, P2Score}) ->

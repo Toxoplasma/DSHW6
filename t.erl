@@ -53,7 +53,7 @@ connect(Node) ->
 login(Pid, UserName, PassWord) ->
     Pid ! {login, self(), UserName, PassWord},
     receive
-        Msg -> {logged_in, _PayerPid, LoginTicket} = Msg
+        Msg -> {logged_in, _PlayerPid, LoginTicket} = Msg
     end,
     LoginTicket.
 
