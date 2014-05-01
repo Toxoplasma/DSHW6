@@ -10,7 +10,7 @@
 -export ([main/1]).
 
 -define (DEBUG, true).
--define (TIMEOUT, 5000).
+-define (TIMEOUT, case ?DEBUG of true -> 60000; false -> 5000 end).
 
 main([Name]) ->
   init(Name);
@@ -92,7 +92,8 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
           end;
 
         false ->
-          utils:log("YM: Player ~p is not currently logged in.", [UserName])
+          utils:log("YM: Player ~p is not currently logged in.", [UserName]),
+          listen(R, C, M, T)
       end;
 
     {request_tournament, Pid, {N = _NumberOfPlayers, K = _GamesPerMatch}} 

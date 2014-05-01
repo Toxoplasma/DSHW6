@@ -2,9 +2,9 @@
 
 -export ([init/4]).
 
--define (TIMEOUT, 5000).
--define (WAIT, 60000).
 -define (DEBUG, true).
+-define (TIMEOUT, case ?DEBUG of true -> 60000; false -> 5000 end).
+-define (WAIT, 60000).
 
 %% Players - dictionary of {name, pid} of all currently logged in players. 
 %% Part of starting a tournament is picking randomly which players will be part of the tournament and waiting for their accepts/rejects
