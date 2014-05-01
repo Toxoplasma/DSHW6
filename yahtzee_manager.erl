@@ -192,7 +192,7 @@ send_start_tournament([{UserName, {Pid, _LoginTicket}} | Ps], Tid) ->
   send_start_tournament(Ps, Tid).
 
 %% Assemble the player list
-receive_accept_tournament([], [], AcceptedPlayers, _Tid) ->
+receive_accept_tournament([], _Extra, AcceptedPlayers, _Tid) ->
   utils:log("YM: Player list has been generated. There are ~p players.", [length(AcceptedPlayers)]),
   utils:dlog("YM: Player list and pids: ~p", [AcceptedPlayers], ?DEBUG),
   AcceptedPlayers;

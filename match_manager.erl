@@ -6,6 +6,15 @@
 -define(GAMETIMEOUT, 10000).
 -define(WAIT, 60000).
 
+-define(UPPERSECTION, 6).
+-define(THREE_OF_A_KIND, 7).
+-define(FOUR_OF_A_KIND, 8).
+-define(FULL_HOUSE, 9).
+-define(SMALL_STRAIGHT, 10).
+-define(LARGE_STRAIGHT, 11).
+-define(YAHTZEE, 12).
+-define(CHANCE, 13).
+
 -define(DEBUG, true).
 
 %% TODO: Game manager is just a function of match_manager. Separate files only if its huge
@@ -170,8 +179,45 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 cheating(Slot, Card) ->
 	lists:nth(Slot, Card) =/= -1.
 
+
+isYahtzee([_A]) ->
+	true;
+isYahtzee([A, A | Rest]) ->
+	isYahtzee([A | Rest]);
+isYahtzee(_Dice) ->
+	false.
+
+scoreUpperSection(Dice, Slot) ->
+	GoodDice = [Die || Die <= Dice, Die == Slot],
+	lists:sum(GoodDice).
+
+score_three_of_a_kind(Dice) ->
+
+
+hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
+
+%Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
-	utils:replace(Slot, lists:sum(Dice), Scorecard).
+	case isYahtzee(Dice) and hasYahtzee(Scorecard) of
+		true ->
+			YahtzeeBonuses = lists:nth(14, Scorecard),
+			NewCard = utils:replace(14, YahtzeeBonuses + 1, Scorecard),
+			addScoreToCardHelper(Dice, NewCard, Slot);
+		false -> addScoreToCardHelper(Dice, Scorecard, Slot)
+	end.
+
+%Make it actually put in the score correctly
+addScoreToCardHelper(Dice, Scorecard, Slot) when Slot <= ?UPPERSECTION ->
+	utils:replace(Slot, scoreUpperSection(Dice, Slot), Scorecard);
+addScoreToCardHelper(Dice, Scorecard, Slot) ->
+	case Slot of
+		?THREE_OF_A_KIND -> utils:replace(Slot, score_three_of_a_kind(Dice), Scorecard);
+		?FOUR_OF_A_KIND -> utils:replace(Slot, score_four_of_a_kind(Dice), Scorecard);
+		?FULL_HOUSE -> utils:replace(Slot, score_full_house(Dice), Scorecard);
+		?SMALL_STRAIGHT -> utils:replace(Slot, score_small_straight(Dice), Scorecard);
+		?LARGE_STRAIGHT -> utils:replace(Slot, score_large_straight(Dice), Scorecard);
+		?CHANCE -> utils:replace(Slot, score_chance(Dice), Scorecard)
+	end.
 
 %% Scores a card, checking for bonuses. Returns the total sore
 cardScore(Scorecard) ->
@@ -183,9 +229,8 @@ cardScore(Scorecard) ->
 			UpperScore = Sum
 	end,
 	LowerScore = lists:sum(LowerSection),
-	TotalScore = UpperScore + LowerScore + (50 * lists:last(Scorecard)),
+	TotalScore = UpperScore + LowerScore + (100 * lists:last(Scorecard)),
 	TotalScore.
-
 
 %% how each different slot is scored
 score_small_straight(Dice) ->
