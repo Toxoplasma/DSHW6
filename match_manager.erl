@@ -197,7 +197,7 @@ isYahtzeeJoker(Dice, Scorecard) ->
 
 %Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
-	case isYahtzee(Dice) and hasYahtzee(Scorecard) of
+	case isYahtzee(Dice) and hasYahtzee(Scorecard) and (lists:nth(hd(Dice), Scorecard) =/= -1) of
 		true ->
 			YahtzeeBonuses = lists:nth(14, Scorecard),
 			NewCard = utils:replace(14, YahtzeeBonuses + 1, Scorecard),
@@ -231,7 +231,6 @@ cardScore(Scorecard) ->
 	TotalScore = UpperScore + LowerScore + (100 * lists:last(Scorecard)),
 	TotalScore.
 
-%% how each different slot is scored
 score_small_straight(Dice, Scorecard) ->
 	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
 	CheckSeq1 = lists:seq(hd(Sorted), lists:last(Sorted)),
