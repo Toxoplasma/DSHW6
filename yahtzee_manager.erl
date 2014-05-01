@@ -70,7 +70,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
           %% Monitor new player
           MRef = monitor(process, Pid),
           Pid ! {logged_in, self(), UserName, MRef},
-          listen(dict:store(UserName, {PassWord, 0, 0, 0, 0}, R), dict:store(UserName, {Pid, MRef}, C), dict:store(MRef, UserName, M), T)
+          listen(dict:store(UserName, {PassWord, {0, 0, 0, 0}}, R), dict:store(UserName, {Pid, MRef}, C), dict:store(MRef, UserName, M), T)
       end;
 
     {logout, _Pid, UserName, Ref} ->
@@ -122,7 +122,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
     {user_info, Pid, UserName} ->
       utils:log("Received user_info from ~p", [UserName]),
       case dict:find(UserName, R) of
-        {ok, {_Password, MWins, MLosses, TWins, TPlayed}} ->
+        {ok, {_Password, {MWins, MLosses, TWins, TPlayed}}} ->
           utils:log("YM: Sending user_info to ~p", [UserName]),
           Pid ! {user_status, self(), {UserName, MWins, MLosses, TPlayed, TWins}};
         error ->
@@ -132,9 +132,9 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
 
     {tournament_result, Tid, Winner} ->
       case dict:find(Winner, R) of
-        {ok, {Password, MWins, MLosses, TWins, TPlayed}} ->
+        {ok, {Password, {MWins, MLosses, TWins, TPlayed}}} ->
           utils:log("YM: Tournament ~p has finished with winner ~p. Storing stats.", [Tid, Winner]),
-          Stats = {Password, MWins, MLosses, TWins + 1, TPlayed},
+          Stats = {Password, {MWins, MLosses, TWins + 1, TPlayed}},
           listen(dict:store(Winner, Stats, R), C, M, dict:store(Tid, {complete, Winner}, T));
 
         error ->
@@ -146,18 +146,18 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
     {match_result, {Winner, _}, {Loser, _} } ->
       utils:log("YM: Match between winner ~p and loser ~p being stored in stats.", [Winner, Loser]),
       case dict:find(Winner, R) of
-        {ok, {WPassword, WMWins, WMLosses, WTWins, WTPlayed}} ->
+        {ok, {WPassword, {WMWins, WMLosses, WTWins, WTPlayed}}} ->
           utils:log("YM: Storing match win for ~p ", [Winner]),
-          WStats = {WPassword, WMWins + 1, WMLosses, WTWins, WTPlayed},
+          WStats = {WPassword, {WMWins + 1, WMLosses, WTWins, WTPlayed}},
           listen(dict:store(Winner, WStats, R), C, M, T);
         error ->
           utils:log("~p is not a registered player.", [Winner]),
           listen(R, C, M, T)
       end,
       case dict:find(Loser, R) of
-        {ok, {LPassword, LMWins, LMLosses, LTWins, LTPlayed}} ->
+        {ok, {LPassword, {LMWins, LMLosses, LTWins, LTPlayed}}} ->
           utils:log("YM: Storing match loss for ~p ", [Loser]),
-          LStats = {LPassword, LMWins, LMLosses + 1, LTWins, LTPlayed},
+          LStats = {LPassword, {LMWins, LMLosses + 1, LTWins, LTPlayed}},
           listen(dict:store(Loser, LStats, R), C, M, T);
         error ->
           utils:log("~p is not a registered player.", [Loser]),
@@ -226,6 +226,6 @@ receive_accept_tournament([{UserName, {_OldPid, LoginTicket}} | Players], Extra,
 update_tournament_wins([], R) ->
   R;
 update_tournament_wins([{P, _} | Ps], R) ->
-  {Password, MWins, MLosses, TWins, TPlayed} = dict:fetch(P, R),
-  Stats = {Password, MWins, MLosses, TWins, TPlayed + 1},
+  {Password, {MWins, MLosses, TWins, TPlayed}} = dict:fetch(P, R),
+  Stats = {Password, {MWins, MLosses, TWins, TPlayed + 1}},
   update_tournament_wins(Ps, dict:store(P, Stats, R)).
