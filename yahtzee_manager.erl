@@ -46,19 +46,23 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
       utils:log("YM: Received login message from ~p", [UserName]),
       case dict:find(UserName, R) of
         {ok, {PassWord, _Stats}} -> 
-          utils:log("YM: Sending logged_in message to returning player ~p", [UserName]),
           %% demonitor the old pid of the user, if they're still logged in
           case dict:find(UserName, C) of
             {ok, {_OldPid, Ref}} ->
-              demonitor(Ref),
+              utils:log("Demonitoring ~p's old Pid.", [UserName]),
+              erlang:demonitor(Ref),
               NewM = dict:erase(Ref, M);
 
             error ->
               NewM = M
           end,
           %% Monitor the player's new Pid, using the monitor ref as the login ticket
-          MRef = monitor(process, Pid),
+          utils:log("Monitoring ~p.", [UserName]),
+          MRef = erlang:monitor(process, Pid),
+          
+          utils:log("YM: Sending logged_in message to returning player ~p", [UserName]),
           Pid ! {logged_in, self(), UserName, MRef},
+
           notify_tournaments(UserName, Pid, dict:to_list(T)),
           listen(R, dict:store(UserName, {Pid, MRef}, C), dict:store(MRef, UserName, NewM), T);
 

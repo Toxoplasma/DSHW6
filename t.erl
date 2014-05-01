@@ -99,8 +99,8 @@ playing(UserName, Tid) ->
             utils:log("Scorecard: ~p", [Scorecard]),
             utils:log("Opponent Scorecard: ~p", [OppScorecard]),
             utils:log("Dice: ~p", [Dice]),
-            DiceKept = lists:map(fun (X) -> X == hd("t") end, io:get_line("Dice to Keep (tttft): ")),
-            Slot = list_to_integer(lists:sublist(io:get_line("Slot: "), 1)),
+            DiceKept = lists:map(fun (X) -> X == hd("t") end, lists:sublist(io:get_line("Dice to Keep (tttft): "), 5)),
+            Slot = list_to_integer(utils:droplast(io:get_line("Slot: "))),
             ReplyPid ! {play_action, self(), UserName, {Ref, Tid, Gid, RollNumber, DiceKept, Slot}};
         {end_tournament, _ReplyPid, UserName, Tid} ->
             utils:log("Finished Tournament.")
