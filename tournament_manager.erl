@@ -60,7 +60,7 @@ finish_matches([{MRef, MPid} | MatchRefsAndPids], YMid, Winners) ->
   receive
     {win, MRef, bye, bye} ->
       utils:log("TM: Received a match result. Both players are byes."),
-      finish_matches(MatchRefsAndPids, YMid, [bye | Winners]);
+      finish_matches(MatchRefsAndPids, YMid, Winners);
     {win, MRef, Winner, bye} ->
       utils:log("TM: Received a match result. Player ~p won against a bye.", [Winner]),
       finish_matches(MatchRefsAndPids, YMid, [Winner | Winners]);
