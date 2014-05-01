@@ -38,7 +38,7 @@ init(Node) ->
 %% If you desire to init with a given seed. Good for reproducing tests
 init(Node, Seed = {A1, A2, A3}) ->
     _ = os:cmd("epmd -daemon"),
-    net_kernel:start([testy, shortnames]),
+    net_kernel:start([list_to_atom("testy" ++ integer_to_list(A1)), shortnames]),
     utils:log("Seeding random with ~p", [Seed]),
     random:seed(A1, A2, A3),
     connect(Node),
@@ -96,8 +96,8 @@ playing(UserName, Tid) ->
             utils:log("Scorecard: ~p", [Scorecard]),
             utils:log("Opponent Scorecard: ~p", [OppScorecard]),
             utils:log("Dice: ~p", [Dice]),
-            DiceKept = lists:map(fun (X) -> X == "t" end, lists:sublist(io:get_line("Dice to Keep (tttft): "), 5)),
-            Slot = list_to_integer(lists:sublist(io:get_line("Slot: ", 1))),
+            DiceKept = lists:map(fun (X) -> X == hd("t") end, lists:sublist(io:get_line("Dice to Keep (tttft): "), 5)),
+            Slot = list_to_integer(lists:sublist(io:get_line("Slot: "), 1)),
             ReplyPid ! {play_action, self(), UserName, {Ref, Tid, Gid, RollNumber, DiceKept, Slot}};
         {end_tournament, _ReplyPid, UserName, Tid} ->
             utils:log("Finished Tournament.")
