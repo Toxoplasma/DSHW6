@@ -16,7 +16,7 @@
          connect/1,
          login/3,
          request_tournament/3,
-         get_stats/2,).
+         get_stats/2,
          play/3]).
 
 -define (TIMEOUT, 10000).
