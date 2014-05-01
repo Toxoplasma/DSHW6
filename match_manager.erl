@@ -219,13 +219,28 @@ addScoreToCardHelper(Dice, Scorecard, Slot) ->
 		?CHANCE -> utils:replace(Slot, score_chance(Dice), Scorecard)
 	end.
 
+%% Scores a card, checking for bonuses. Returns the total sore
 cardScore(Scorecard) ->
-	First13 = lists:sublist(Scorecard, 13),
-	Score = lists:sum(First13) + 100 * lists:last(Scorecard),
-	Score.
+	{UpperSection, LowerSection} = lists:split(6, lists:sublist(Scorecard, 13)),
+	case lists:sum(UpperSection) of
+		Sum when Sum >= 63 ->
+			UpperScore = 35 + Sum;
+		Sum ->
+			UpperScore = Sum
+	end,
+	LowerScore = lists:sum(LowerSection),
+	TotalScore = UpperScore + LowerScore + (100 * lists:last(Scorecard)),
+	TotalScore.
 
-%TODO: SET TIMEOUT VALUE
-%TODO: CHEATING DETECTION
+%% how each different slot is scored
 
-%TODO: Add yahtzee bonuses
-%TODO: ACTUAL SCORING
+score_yahtzee(Dice) ->
+	case lists:all(fun (Die) -> hd(Dice) == Die end, Dice) of
+		true ->
+			50;
+		false ->
+			0
+	end.
+
+score_chance(Dice) ->
+	lists:sum(Dice).
