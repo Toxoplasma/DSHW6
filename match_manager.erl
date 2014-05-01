@@ -313,3 +313,7 @@ score_yahtzee(Dice) ->
 
 score_chance(Dice) ->
 	lists:sum(Dice).
+
+
+
+%TODO: make it so if both players crash then we return a bye
