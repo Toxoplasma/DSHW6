@@ -187,11 +187,41 @@ isYahtzee([A, A | Rest]) ->
 isYahtzee(_Dice) ->
 	false.
 
+%Assumes sorted dice
+isThreeOfAKind([_, _]) -> false;
+isThreeOfAKind([A, A, A | Rest]) -> true;
+isThreeOfAKind([_ | Rest]) -> isThreeOfAKind(Rest).
+	
+
 scoreUpperSection(Dice, Slot) ->
 	GoodDice = [Die || Die <= Dice, Die == Slot],
 	lists:sum(GoodDice).
 
 score_three_of_a_kind(Dice) ->
+	SortedDice = lists:sort(Dice),
+	case isThreeOfAKind(SortedDice) of
+		true -> lists:sum(Dice);
+		false -> 0
+	end.
+
+%Assumes sorted dice
+isFourOfAKind([A, A, A, A, _]) -> true;
+isFourOfAKind([_, A, A, A, A]) -> true;
+isFourOfAKind(_) -> false.
+
+score_four_of_a_kind(Dice) ->
+	SortedDice = lists:sort(Dice),
+	case isFourOfAKind(SortedDice) of
+		true -> lists:sum(Dice);
+		false -> 0
+	end.
+
+isFullHouse([A, A, A, B, B]) -> true;
+isFullHouse([B, B, A, A, A]) -> true;
+isFullHouse(_) -> false.
+
+score_full_house(Dice, Scorecard) ->
+	if isYahtzee(Dice) and hasYahtzee(Scorecard) and 
 
 
 hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
@@ -213,9 +243,10 @@ addScoreToCardHelper(Dice, Scorecard, Slot) ->
 	case Slot of
 		?THREE_OF_A_KIND -> utils:replace(Slot, score_three_of_a_kind(Dice), Scorecard);
 		?FOUR_OF_A_KIND -> utils:replace(Slot, score_four_of_a_kind(Dice), Scorecard);
-		?FULL_HOUSE -> utils:replace(Slot, score_full_house(Dice), Scorecard);
-		?SMALL_STRAIGHT -> utils:replace(Slot, score_small_straight(Dice), Scorecard);
-		?LARGE_STRAIGHT -> utils:replace(Slot, score_large_straight(Dice), Scorecard);
+		?FULL_HOUSE -> utils:replace(Slot, score_full_house(Dice, Scorecard), Scorecard);
+		?SMALL_STRAIGHT -> utils:replace(Slot, score_small_straight(Dice, Scorecard), Scorecard);
+		?LARGE_STRAIGHT -> utils:replace(Slot, score_large_straight(Dice, Scorecard), Scorecard);
+		?YAHTZEE -> utils:replace(Slot, score_yahtzee(Dice), Scorecard);
 		?CHANCE -> utils:replace(Slot, score_chance(Dice), Scorecard)
 	end.
 
