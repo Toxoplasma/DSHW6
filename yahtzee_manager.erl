@@ -122,9 +122,9 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
     {user_info, Pid, UserName} ->
       utils:log("Received user_info from ~p", [UserName]),
       case dict:find(UserName, R) of
-        {ok, {Password, MWins, MLosses, TWins, TPlayed}} ->
-          utils:log("YM: Sending user_info to ~p", [UserName])
-          Pid ! {user_status, self(), {UserName, MWins, MLosses, TPlayed, TWins}}
+        {ok, {_Password, MWins, MLosses, TWins, TPlayed}} ->
+          utils:log("YM: Sending user_info to ~p", [UserName]),
+          Pid ! {user_status, self(), {UserName, MWins, MLosses, TPlayed, TWins}};
         error ->
           utils:log("ERROR: ~p is not a registered player.", [UserName])
       end,
@@ -226,6 +226,6 @@ receive_accept_tournament([{UserName, {_OldPid, LoginTicket}} | Players], Extra,
 update_tournament_wins([], R) ->
   R;
 update_tournament_wins([{P, _} | Ps], R) ->
-  {Password, MWins, MLosses, TWins, WTPlayed} = dict:fetch(P, R),
-  Stats = {WPassword, WMWins, WMLosses, WTWins, WTPlayed + 1},
+  {Password, MWins, MLosses, TWins, TPlayed} = dict:fetch(P, R),
+  Stats = {Password, MWins, MLosses, TWins, TPlayed + 1},
   update_tournament_wins(Ps, dict:store(P, Stats, R)).

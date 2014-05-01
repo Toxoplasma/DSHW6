@@ -182,6 +182,20 @@ cardScore(Scorecard) ->
 		Sum ->
 			UpperScore = Sum
 	end,
-	LowerScore = lists:sum(LowerSection)
+	LowerScore = lists:sum(LowerSection),
 	TotalScore = UpperScore + LowerScore + (50 * lists:last(Scorecard)),
-	Score.
+	TotalScore.
+
+
+%% how each different slot is scored
+
+score_yahtzee(Dice) ->
+	case lists:all(fun (Die) -> hd(Dice) == Die end, Dice) of
+		true ->
+			50;
+		false ->
+			0
+	end.
+
+score_chance(Dice) ->
+	lists:sum(Dice).
