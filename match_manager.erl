@@ -193,31 +193,20 @@ scoreUpperSection(Dice, Slot) ->
 	GoodDice = [Die || Die <= Dice, Die == Slot],
 	lists:sum(GoodDice).
 
-score_three_of_a_kind(Dice) ->
-	SortedDice = lists:sort(Dice),
-	case isThreeOfAKind(SortedDice) of
-		true -> lists:sum(Dice);
-		false -> 0
-	end.
+
 
 %Assumes sorted dice
 isFourOfAKind([A, A, A, A, _]) -> true;
 isFourOfAKind([_, A, A, A, A]) -> true;
 isFourOfAKind(_) -> false.
 
-score_four_of_a_kind(Dice) ->
-	SortedDice = lists:sort(Dice),
-	case isFourOfAKind(SortedDice) of
-		true -> lists:sum(Dice);
-		false -> 0
-	end.
+
 
 isFullHouse([A, A, A, B, B]) -> true;
 isFullHouse([B, B, A, A, A]) -> true;
 isFullHouse(_) -> false.
 
-score_full_house(Dice, Scorecard) ->
-	if isYahtzee(Dice) and hasYahtzee(Scorecard) and 
+
 
 
 hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
@@ -263,6 +252,28 @@ cardScore(Scorecard) ->
 	TotalScore.
 
 %% how each different slot is scored
+
+score_three_of_a_kind(Dice) ->
+	SortedDice = lists:sort(Dice),
+	case isThreeOfAKind(SortedDice) of
+		true -> lists:sum(Dice);
+		false -> 0
+	end.
+
+
+score_four_of_a_kind(Dice) ->
+	SortedDice = lists:sort(Dice),
+	case isFourOfAKind(SortedDice) of
+		true -> lists:sum(Dice);
+		false -> 0
+	end.
+
+score_full_house(Dice, Scorecard) ->
+	case isFullHouse(Dice) or isYahtzeeJoker(Dice, Scorecard) of
+		true -> 25;
+		false -> 0
+	end.
+
 score_small_straight(Dice, Scorecard) ->
 	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
 	CheckSeq1 = lists:seq(hd(Sorted), lists:last(Sorted)),
