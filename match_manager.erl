@@ -173,13 +173,15 @@ cheating(Slot, Card) ->
 addScoreToCard(Dice, Scorecard, Slot) ->
 	utils:replace(Slot, lists:sum(Dice), Scorecard).
 
+%% Scores a card, checking for bonuses. Returns the total sore
 cardScore(Scorecard) ->
-	First13 = lists:sublist(Scorecard, 13),
-	Score = lists:sum(First13) + 50 * lists:last(Scorecard),
+	{UpperSection, LowerSection} = lists:split(6, lists:sublist(Scorecard, 13)),
+	case lists:sum(UpperSection) of
+		Sum when Sum >= 63 ->
+			UpperScore = 35 + Sum;
+		Sum ->
+			UpperScore = Sum
+	end,
+	LowerScore = lists:sum(LowerSection)
+	TotalScore = UpperScore + LowerScore + (50 * lists:last(Scorecard)),
 	Score.
-
-%TODO: SET TIMEOUT VALUE
-%TODO: CHEATING DETECTION
-
-%TODO: Add yahtzee bonuses
-%TODO: ACTUAL SCORING
