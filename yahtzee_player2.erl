@@ -127,8 +127,8 @@ computeAction({Ref, Tid, Gid, RollNumber, _Dice, Scorecard, _OppScorecard}) ->
         _ -> {Ref, Tid, Gid, RollNumber, [true, true, true, true, true], hd(EmptyScores)}
     end.
   
-loseAction({Ref, Tid, Gid, _RollNumber, _Dice, _Scorecard, _OppScorecard}) ->
-    {Ref, Tid, Gid, -1, [true, true, true, true, true], -1}.
+loseAction({Ref, Tid, Gid, RollNumber, _Dice, _Scorecard, _OppScorecard}) ->
+    {Ref, Tid, Gid, RollNumber, [true, true, true, true, true], -1}.
 
 %Compute action related helpers
 findEmptyScores(Scorecard) -> findEmptyScores(Scorecard, [], 1).
