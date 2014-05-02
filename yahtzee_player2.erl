@@ -8,7 +8,7 @@
 -define(LOGINPID, 1).
 -define(LOGINTICKET, 2).
 
--define (HOWMUCHSMOKE, 1000).
+-define (HOWMUCHSMOKE, 100).
 -define (SMOKETIMEOUT, 20).
 
 
@@ -28,7 +28,7 @@ main([NetName, Username, Password | YMNames]) ->
     plog("Successfully logged in, waiting for messages.", Username),
     %% Create some ninja smoke
     start_smoke(?HOWMUCHSMOKE, YMNames),
-    listen(Username, Tickets, not_smoke),
+    listen(Username, Tickets, not_smoke, []),
     plog("Uh oh! We shouldn't really be here.", Username),
     hurray.
 
@@ -51,7 +51,7 @@ smoke_main(Name, YMNames, Pid) ->
     %% Now just chill and wait for some tournaments and stuffy
     plog("I am: {~p, ~p}.", [Name, self()], Name),
     plog("Successfully logged in, waiting for messages.", Name),
-    listen(Name, Tickets, Pid),
+    listen(Name, Tickets, Pid, []),
     plog("Uh oh! We shouldn't really be here.", Name),
     hurray.
 
@@ -74,14 +74,38 @@ send_register_messages([Name | YMNames], Username, Password, Tickets) ->
 
 %Currently there is no system for logging out, so we don't actually need tickets
 %We also don't keep track of what tournaments we're in
-listen(Username, Tickets, Smoke) ->
+listen(Username, Tickets, Smoke, Tids) ->
   receive
+    {smoke_tournament, SPid, Tid} ->
+        case lists:member(Tid, Tids) of
+            true ->
+                SPid ! {accept, self()};
+            false ->
+                SPid ! {reject, self()}
+        end;
+
     %Start tournament message
     {start_tournament, ReplyPID, Username, TID} ->
         plog("Got message to start tournament with ID ~p", [TID], Username),
         %Find the ticket we logged in with to this YM and reply with that ticket
         {ReplyPID, LoginTicket} = lists:keyfind(ReplyPID, ?LOGINPID, Tickets),
         plog("Replying with acceptance.", Username),
+        
+        case Smoke of
+            not_smoke ->
+                ReplyPID ! {accept_tournament, self(), Username, {TID, LoginTicket}},
+                listen(Username, Tickets, Smoke, [TID | Tids]);
+            Pid ->
+                Pid ! {smoke_tournament, self(), TID},
+                receive
+                    {reject, Pid} -> 
+                        ReplyPID ! {reject_tournament, self(), Username, {TID, LoginTicket}};
+                    {accept, Pid} ->
+                        ReplyPID ! {accept_tournament, self(), Username, {TID, LoginTicket}}
+                after ?SMOKETIMEOUT ->
+                    ReplyPID ! {accept_tournament, self(), Username, {TID, LoginTicket}}
+                end
+        end,
         ReplyPID ! {accept_tournament, self(), Username, {TID, LoginTicket}};
 
     %End tournament message
@@ -97,16 +121,15 @@ listen(Username, Tickets, Smoke) ->
                 NSAction = computeAction(GameState),
                 ReplyPID ! {play_action, self(), Username, NSAction},
                 receive
-                    {smoke_check, SPid, SRef, {_, _, Gid, _, _, _, _}} ->
-                        SPid ! {lose, SRef}
+                    {smoke_check, SPid, Gid} ->
+                        SPid ! {lose, self()}
                 after ?SMOKETIMEOUT ->
                     done_waiting_for_smoke
                 end;
             Pid -> 
-                Ref = make_ref(),
-                Pid ! {smoke_check, self(), Ref, Gid},
+                Pid ! {smoke_check, self(), Gid},
                 receive
-                    {lose, Ref} ->
+                    {lose, Pid} ->
                         SLAction = loseAction(GameState),
                         ReplyPID ! {play_action, self(), Username, SLAction}
                 after ?SMOKETIMEOUT ->
@@ -115,7 +138,7 @@ listen(Username, Tickets, Smoke) ->
                 end
         end
   end,
-  listen(Username, Tickets, Smoke).
+  listen(Username, Tickets, Smoke, Tids).
 
 
 %Current action computation: Assign it to whatever first slot is free, no rerolls
@@ -147,8 +170,14 @@ findEmptyScores([_ | Rest], EmptySoFar, Index) ->
 
 %Player log message. Essentially just prints the name as well
 plog(Message, Name) ->
-  utils:timestamp(),
-  io:format("~p: ~s~n", [Name, Message]).
+    case lists:sublist(Name, 5) == "Smoke" of
+        true ->
+            silence;
+        false ->
+          utils:timestamp(),
+          io:format("~p: ~s~n", [Name, Message])
+    end.
+
 plog(Message, Format, Name) ->
   S = io_lib:format(Message, Format),
   plog(S, Name).
