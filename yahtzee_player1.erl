@@ -7,6 +7,8 @@
 -define(LOGINPID, 1).
 -define(LOGINTICKET, 2).
 
+-define (HOWMUCHSMOKE, 1000).
+
 main([NetName, Username, Password | YMNames]) ->
 	%% Boring erlang net stuffy
 	_ = os:cmd("epmd -daemon"),
