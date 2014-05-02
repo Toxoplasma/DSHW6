@@ -122,7 +122,8 @@ game(P1, P2, K, TID, NumTies) ->
 	Winner = set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 1),
 	%utils:log("MM: (~p) Game finished! Winner: ~p", [GID, Winner]),
 	Winner.
-	
+
+
 
 %% helper function for game
 %% ie on the 14th we're done, figure out a winner
@@ -140,16 +141,17 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
 			utils:log("MM: (~p) Game winner is: ~p", [GID, P2]),
 			{win, P2, P1};
 		true -> 
-			utils:log("MM: (~p) Game was a tie, restarting with NumTies ~p", [GID, NumTies]),
+			utils:log("MM: (~p) Game was a tie, restarting with NumTies ~p", [GID, NumTies + 1]),
 			game(P1, P2, K, TID, NumTies + 1)
 	end;
 
 %% Ordinary set, i.e. not on round 14
 set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 	%% Generate the numbers for the set, assuming numTies < 6
-	P1Dice = utils:rand_seq(6, 15),
+	%P1Dice = utils:rand_seq(6, 15),
+	P1Dice = [5 || _ <- utils:rand_seq(6, 15)],
 	if  NumTies < K/2 -> P2Dice = P1Dice;
-		true -> P2Dice = utils:rand_seq(6, 15)
+		true -> P2Dice = [5 || _ <- utils:rand_seq(6, 15)]%P2Dice = utils:rand_seq(6, 15)
 	end,
 
 	utils:log("MM: (~p) Dice for round are ~n  ~p and ~n  ~p", [GID, P1Dice, P2Dice]),
@@ -203,7 +205,7 @@ round({P1Name, P1PID}, TID, GID, Dice, _RestDice, P1Card, P2Card, 3) ->
 round({P1Name, P1PID}, TID, GID, Dice, RestDice, P1Card, P2Card, TurnNum) ->
 	case turn({P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) of
 		%Some dice, still working on it
-		{response, {DiceKept, 0}} ->
+		{response, {DiceKept = [_,_,_,_,_], 0}} ->
 			KeptDice = [Die || {Die, Keep} <- lists:zip(Dice, DiceKept), Keep == true],
 			{NewDice, NewRestDice} = lists:split(5 - length(KeptDice), RestDice),
 			round({P1Name, P1PID}, TID, GID, KeptDice ++ NewDice, NewRestDice, P1Card, P2Card, TurnNum + 1);
@@ -268,17 +270,23 @@ isFullHouse([A, A, A, B, B]) -> true;
 isFullHouse([B, B, A, A, A]) -> true;
 isFullHouse(_) -> false.
 
+%Takes in sorted no duplicates
+isStraight([_]) -> true;
+isStraight([A , B | Rest]) when A + 1 == B ->
+	isStraight([B | Rest]);
+isStraight(_) -> false.
+
 
 
 
 hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
 
 isYahtzeeJoker(Dice, Scorecard) ->
-	isYahtzee(Dice) and hasYahtzee(Scorecard).
+	isYahtzee(Dice) and hasYahtzee(Scorecard) and lists:nth(hd(Dice), Scorecard =/= -1).
 
 %Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
-	case isYahtzee(Dice) and hasYahtzee(Scorecard) and (lists:nth(hd(Dice), Scorecard) =/= -1) of
+	case isYahtzee(Dice) and hasYahtzee(Scorecard) of
 		true ->
 			YahtzeeBonuses = lists:nth(14, Scorecard),
 			NewCard = utils:replace(14, YahtzeeBonuses + 1, Scorecard),
@@ -337,14 +345,33 @@ score_full_house(Dice, Scorecard) ->
 
 score_small_straight(Dice, Scorecard) ->
 	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
-	CheckSeq1 = lists:seq(hd(Sorted), lists:last(Sorted)),
-	CheckSeq2 = lists:seq(lists:nth(2, Sorted), lists:last(Sorted)),
-	case (CheckSeq1 == Sorted) or (CheckSeq2 == Sorted) or isYahtzeeJoker(Dice, Scorecard) of
-		true ->
+	SortedLength = length(Sorted),
+	IsYahtzeeJoker = isYahtzeeJoker(Dice, Scorecard),
+	if
+		IsYahtzeeJoker ->
 			30;
-		false ->
-			0
+		SortedLength < 4 ->
+			0;
+		SortedLength == 4 ->
+			case isStraight(Sorted) of
+				true -> 30;
+				false -> 0
+			end;
+		SortedLength == 5 ->
+			case (isStraight(lists:sublist(Sorted, 4)) or isStraight(lists:sublist(Sorted, 2, 4))) of
+				true -> 30;
+				false -> 0
+			end;
+		true -> 0
 	end.
+	% CheckSeq1 = lists:seq(hd(Sorted), lists:nth(Sorted)),
+	% CheckSeq2 = lists:seq(lists:nth(2, Sorted), lists:last(Sorted)),
+	% case (CheckSeq1 == Sorted) or (CheckSeq2 == Sorted) or isYahtzeeJoker(Dice, Scorecard) of
+	% 	true ->
+	% 		30;
+	% 	false ->
+	% 		0
+	% end.
 
 score_large_straight(Dice, Scorecard) ->
 	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),

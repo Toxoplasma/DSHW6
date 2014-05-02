@@ -76,13 +76,17 @@ request_tournament(Node, N, K) ->
             Tid
     end.
 
+
+%{tournament_status, self(), {Tid, in_progress, undefined, no_value}};
 tournament_info(Node, Tid) ->
     {yahtzee_manager, Node} ! {tournament_info, self(), Tid},
     receive
-        {tournament_status, _ReplyPid, {Tid, 'in_progress', undefined, _OptionalData}} ->
+        {tournament_status, _ReplyPid, {Tid, in_progress, undefined, _OptionalData}} ->
             utils:log("Tournament ~p is still in progress.", [Tid]);
         {tournament_status, _ReplyPid, {Tid, complete, Winner, _OptionalData}} ->
             utils:log("Tournament ~p was won by ~p!.", [Tid, Winner])
+    after ?TIMEOUT ->
+        utils:log("Info request for tournament ~p timed out...", [Tid])
     end.
 
 %TODO: test that multiple managers works
