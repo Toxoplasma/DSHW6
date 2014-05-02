@@ -148,10 +148,10 @@ set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, 14) ->
 %% Ordinary set, i.e. not on round 14
 set(P1, P2, P1Card, P2Card, K, GID, TID, NumTies, RoundNum) ->
 	%% Generate the numbers for the set, assuming numTies < 6
-	%P1Dice = utils:rand_seq(6, 15),
-	P1Dice = [5 || _ <- utils:rand_seq(6, 15)],
+	P1Dice = utils:rand_seq(6, 15),
+	%P1Dice = [5 || _ <- utils:rand_seq(6, 15)],
 	if  NumTies < K/2 -> P2Dice = P1Dice;
-		true -> P2Dice = [5 || _ <- utils:rand_seq(6, 15)]%P2Dice = utils:rand_seq(6, 15)
+		true -> P2Dice = P2Dice = utils:rand_seq(6, 15) %[5 || _ <- utils:rand_seq(6, 15)]
 	end,
 
 	utils:log("MM: (~p) Dice for round are ~n  ~p and ~n  ~p", [GID, P1Dice, P2Dice]),
@@ -239,7 +239,7 @@ turn(P1 = {P1Name, P1PID}, TID, GID, TurnNum, Dice, P1Card, P2Card) ->
 	end.
 
 
-%% TODO: Make it so it actually scores stuff properly
+cheating(Slot, _) when( (Slot < 0) or (Slot > 13) )-> true;
 cheating(Slot, Card) ->
 	lists:nth(Slot, Card) =/= -1.
 
@@ -266,8 +266,8 @@ isFourOfAKind(_) -> false.
 
 
 
-isFullHouse([A, A, A, B, B]) -> true;
-isFullHouse([B, B, A, A, A]) -> true;
+isFullHouse([A, A, A, B, B]) when A =/= B -> true;
+isFullHouse([B, B, A, A, A]) when A =/= B -> true;
 isFullHouse(_) -> false.
 
 %Takes in sorted no duplicates
@@ -282,7 +282,7 @@ isStraight(_) -> false.
 hasYahtzee(Scorecard) -> lists:nth(12, Scorecard) == 50.
 
 isYahtzeeJoker(Dice, Scorecard) ->
-	isYahtzee(Dice) and hasYahtzee(Scorecard) and lists:nth(hd(Dice), Scorecard =/= -1).
+	isYahtzee(Dice) and hasYahtzee(Scorecard) and (lists:nth(hd(Dice), Scorecard) =/= -1).
 
 %Check for possible yahtzee bonuses then call the helper
 addScoreToCard(Dice, Scorecard, Slot) ->
@@ -375,12 +375,19 @@ score_small_straight(Dice, Scorecard) ->
 
 score_large_straight(Dice, Scorecard) ->
 	Sorted = lists:sort(sets:to_list(sets:from_list(Dice))),
-	CheckSeq = lists:seq(hd(Sorted), lists:last(Sorted)),
-	case (Sorted == CheckSeq) or isYahtzeeJoker(Dice, Scorecard) of
-		true ->
+	SortedLength = length(Sorted),
+	IsYahtzeeJoker = isYahtzeeJoker(Dice, Scorecard),
+	if
+		IsYahtzeeJoker ->
 			40;
-		false ->
-			0
+		SortedLength < 5 ->
+			0;
+		SortedLength == 5 ->
+			case isStraight(Sorted) of
+				true -> 40;
+				false -> 0
+			end;
+		true -> 0
 	end.
 
 score_yahtzee(Dice) ->
@@ -396,4 +403,3 @@ score_chance(Dice) ->
 
 
 
-%TODO: make it so if both players crash then we return a bye
