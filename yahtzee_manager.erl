@@ -9,7 +9,7 @@
 
 -export ([main/1]).
 
--define (DEBUG, true).
+-define (DEBUG, false).
 -define (TIMEOUT, case ?DEBUG of true -> 60000; false -> 5000 end).
 
 main([Name]) ->
@@ -40,7 +40,7 @@ init(Name, Seed = {A1, A2, A3}) ->
 %% M = a dictionary of MonitorRef to UserName
 %% T = a dictionary of Tid to 
 listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs, T = _Tournaments) ->
-    utils:dlog("YM: All current users: ~p", [dict:to_list(C)], ?DEBUG),
+    utils:dlog("YM: All currently logged in users: ~p", [dict:to_list(C)], ?DEBUG),
     receive
         {login, Pid, UserName, PassWord} ->
             utils:log("YM: Received login message from ~p", [UserName]),
@@ -101,6 +101,7 @@ listen(R = _RegisteredPlayersAndStats, C = _CurrentlyLoggedIn, M = _MonitorRefs,
             utils:log("YM: Received a request_tournament of ~p players, best of ~p games per match.", [N, K]),
             
             %% Register up to N players in the tournament (randomly selected)
+            %% TODO: empty C
             {RandomSelection, Extra} = utils:rand_split(N, dict:to_list(C)),
             Tid = make_ref(),
             send_start_tournament(RandomSelection, Tid),
